@@ -1,0 +1,2747 @@
+#include "meshFIM.h"
+#include "Vec.h"
+#include <math.h>
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <cuda_runtime.h>
+#include <cutil.h>
+#include "CUDADefines.h"
+
+#include "mysys.h"
+#include "greedy.h"
+#include "graph.h"
+#include "colorrtns.h"
+
+
+#include <time.h>
+
+
+
+
+//#define  PI 3.1415927
+
+
+
+
+
+
+////////////////////////////////////  CUDA CODE ///////////////////////////////////////////////////////////////////
+
+
+
+
+
+#if __DEVICE_EMULATION__
+
+bool InitCUDA(void){return true;}
+
+
+#else
+bool InitCUDA(void)
+{
+	int count = 0;
+	int i = 0;
+
+	cudaGetDeviceCount(&count);
+	if(count == 0) {
+		fprintf(stderr, "There is no device.\n");
+		return false;
+	}
+
+	for(i = 0; i < count; i++) {
+		cudaDeviceProp prop;
+		if(cudaGetDeviceProperties(&prop, i) == cudaSuccess) {
+			if(prop.major >= 1) {
+				break;
+			}
+		}
+	}
+	if(i == count) {
+		fprintf(stderr, "There is no device supporting CUDA.\n");
+		return false;
+	}
+	cudaSetDevice(i);
+
+	printf("CUDA initialized.\n");
+	return true;
+}
+
+#endif
+/************************************************************************/
+/* Example                                                              */
+/************************************************************************/
+
+struct d_Face {
+	int v[3];
+	float speedInv;
+};
+
+struct d_Point{
+	float coord[3];
+	
+};
+
+
+void lbfs(popmembertype *m, int *secondary)
+/*
+	generate a lexicographic breadthfirst search order
+	using secondary to break ties (max first)
+*/
+{
+	int i,oldi,j,t, first;
+	vertextype vec[MAXVERTEX+1]; 
+	int next[MAXVERTEX+1], start[MAXVERTEX+1];
+	int current,zfree;
+	vertextype temp;
+
+	for(i=0;i<order;i++) vec[i] = i;
+
+	/* start[i] is the first vertex of the i+1st class */
+	/* first indicates the first lexico classs still active */
+	/* next is a linked list of classes in lexico order */
+	first = 0;
+	next[first]=order;
+	start[first] = order; /* initially all vertices are in the null 
+				label class */
+	zfree = 1;
+	current = 0;
+	while(current < order) {
+		/* select vertex from front class with maximum secondary 
+		   note current will always be pointing at the initial vertex
+		   of the first availble class
+		*/
+
+		for(i=current+1;i<start[first]; i++)
+			if (secondary[vec[i]] > secondary[vec[current]] ) {
+				temp = vec[i];
+				vec[i] = vec[current];
+				vec[current] = temp;
+			}
+
+		i= current+1;
+		t = first;
+
+		/* split the classes */
+		while (i < order) { 
+			j = start[t]-1;
+			oldi = i;
+			while (i<=j) {
+				if (edge(vec[i],vec[current]) ) i++;
+				else {
+					temp = vec[i];
+					vec[i] = vec[j];
+					vec[j] = temp;
+					j--;
+				}
+			}
+			/* i has passed j; if both i and j moved,
+			   then i is now first of new sub-class 
+			   insert it.
+			*/
+			if ( (oldi != i)  && (j != start[t]-1) ) {
+			   next[zfree] = next[t];
+			   start[zfree] = start[t];
+			   next[t] = zfree;
+			   start[t] = i;
+			   zfree++;
+			   t = next[t]; /* so we will skip below */
+			}
+
+			i = start[t];
+			t = next[t];
+		}
+
+		/*advance current and determine whether first should advance*/
+		current++;
+		if (current >= start[first]) first = next[first];
+	}
+
+	/* copy vec to the popmember */
+	for(i=0;i<order;i++) m->vc[i].vertex = vec[i];
+
+#ifdef DEBUG
+	for(i=0;i<30;i++) {
+		printf("%d: ",i);
+		for(j=0;j<i;j++) {
+			if (edge(m->vc[i].vertex,m->vc[j].vertex))
+				printf("%d ", j);
+		}
+		printf("\n");
+	}
+#endif
+
+}
+
+
+void colorsearch(char *name, vector<int> &colorLabel, int &numColor)
+/* 
+	This version uses the greedy, this routine 
+	asks for the various parameters.
+*/
+
+{
+	popmembertype m;
+	greedytype initGreedy;
+	int	vordering,kempewh;
+	char	usekempe[5];
+	int i;
+
+	int *secondary;
+
+        char info[256];
+        long lseconds, lmicrosecs;
+        int pid;
+
+	/* process id */
+	//pid = getpid();
+	//printf("Process pid = %d\n",pid);
+
+	//printf("GREEDY TYPE SELECTION\n");
+	//printf("\t%1d\tSimple Greedy\n",SIMPLEG);
+	//printf("\t%1d\tLargest First Greedy\n",LARGESTG);
+	//printf("\t%1d\tSmallest First Greedy\n",SMALLESTG);
+	//printf("\t%1d\tRandom Sequence Greedy\n",RANDSEQG);
+	//printf("\t%1d\tReverse Order Greedy\n",REVERSEG);
+	//printf("\t%1d\tStir Color Greedy\n",STIRGRDY);
+	//
+	//printf("Which for this program ");
+	//scanf("%d",&initGreedy);
+	//printf("%d\n",initGreedy);
+	initGreedy = 1;
+	if ((initGreedy >= MAXGRDY) || (initGreedy < 1)){
+		printf("GREEDY: Illegal Greedy type\n");
+		exit(1);
+	}
+
+	//printf("Initial Vertex Ordering:\n\t1 -- inorder\n\t2 -- random\n");
+	//printf("\t3 -- decreasing degree\n\t4 -- increasing degree\n");
+	//printf("\t5 -- LBFS random\n\t6 -- LBFS decreasing degree\n");
+	//printf("\t7 -- LBFS increasing degree\n");
+
+	//printf("Using: ");
+	//scanf("%d",&vordering);
+	//printf("%d\n",vordering);
+
+	vordering = 4;
+
+	switch(vordering) {
+		case 1 :
+			for(i=0;i<order;i++) m.vc[i].vertex = i;
+			break;
+		case 2 : 
+			for(i=0;i<order;i++) m.vc[i].vertex = i;
+			permute(&m,0,order); 
+			break;
+		case 3 : 
+			for(i=0;i<order;i++) 
+				m.vc[i].vertex = i;
+			computedeg();
+			qsort((char *) m.vc,(int) order,
+                          sizeof(struct vrtxandclr), (compfunc)decdeg);
+			break; 
+		case 4: 
+			for(i=0;i<order;i++) m.vc[i].vertex = i;
+			computedeg();
+			qsort((char *) m.vc,(int) order,
+                          sizeof(struct vrtxandclr),(compfunc)incdeg);
+			break;
+		case 5: 
+			secondary = (int *)malloc(order*sizeof(int));
+			//srand( (unsigned)time( NULL ) );
+			for(i=0;i<order;i++) secondary[i] = rand();
+			lbfs(&m,secondary);
+			free(secondary);
+			break;
+		case 6:
+			secondary = (int *) malloc(order*sizeof(int));
+			computedeg();
+			for(i=0;i<order;i++) secondary[i] = degseq[i];
+			lbfs(&m,secondary);
+			free(secondary);
+			break;
+		case 7: 
+			secondary = (int *) malloc(order*sizeof(int));
+			computedeg();
+			for(i=0;i<order;i++) secondary[i] = order - degseq[i];
+			lbfs(&m,secondary);
+			free(secondary);
+			break;
+		default : {
+			printf("GREEDY: Illegal Vertex Ordering\n");
+			exit(1);
+		}
+	}
+
+	//printf("Use kempe reductions y/n ");
+	//scanf("%s",usekempe);
+	//printf("%s\n",usekempe);
+	usekempe[0] = 'n';
+	if  ( usekempe[0] == 'y') {
+		kempewh = 0;
+	} else if (usekempe[0] == 'n' ) {
+		kempewh = 1;
+	} else {
+		printf("GREEDY: illegal input for Kempe selection\n");
+		exit(1);
+	}
+
+	greedy(&m, 0, order, MAXVERTEX, initGreedy, kempewh);
+
+	getcolorinfo(&m);
+	
+	printinfo(&m);
+
+	verifycolor(&m);
+
+        //i = getrusage(RUSAGE_SELF,&tmp);
+        //lseconds = tmp.ru_utime.tv_sec-seconds;
+        //lmicrosecs = tmp.ru_utime.tv_usec-microsecs;
+
+        sprintf(info, "GREEDY");
+        //        lseconds+(lmicrosecs/1000000.0) , pid);
+
+        fileres(name, &m,info, colorLabel, numColor);
+
+
+
+	/* printcoloring(&m); */
+	
+
+}
+
+
+void meshFIM::GraphColoring()
+{
+	int argc=2;
+	char *argv[2];
+	int seed;
+
+	if (argc!=2) {
+		printf("\tUsage: greedy file\n");
+		exit(1);
+	}
+
+	about("GREEDY");
+
+	argv[1] = "sphere-orig-r20.col";
+
+	/* Set up graph */
+	//i = getrusage(RUSAGE_SELF,&tmp);
+	//seconds = tmp.ru_utime.tv_sec;
+	//microsecs = tmp.ru_utime.tv_usec;
+	//getgraph(argv[1]);
+
+
+	//FILE* edgefile = fopen(argv[1], "w+");
+
+	//fprintf(edgefile,"c FILE: games120.col\nc Translated from Stanford GraphBase File: games120.gb\nc Stanford GraphBase ID: games(120,0,0,0,0,0,128,0)\np edge 14888 6870\n");
+
+	//vector<TriMesh::Face> faces = m_meshPtr->faces;
+	//vector<point> vertices = m_meshPtr->vertices;
+	//order = faces.size();
+	////colorLabel.resize(order);
+	//int numVert = m_meshPtr->vertices.size();
+	//vector<int> nb;
+	//int edgecnt=0;
+
+	//for (int i =0; i< numVert; i++)
+	//{
+	//	nb = m_meshPtr->adjacentfaces[i];
+	//	for (int j = 0;j <nb.size(); j++)
+	//	{
+	//		for (int k = j+1; k<nb.size(); k++)
+	//		{
+	//			fprintf(edgefile, "e %d %d\n", (nb[j]+1),(nb[k]+1));
+
+	//			edgecnt++;
+	//		}
+	//		
+	//		
+
+	//	}
+	//	
+	//}
+
+
+	//fclose(edgefile);
+
+
+	//read_graph_DIMACS_ascii(argv[1] );
+
+	initializeEdge(/*argv[1]*/m_meshPtr, m_ColorLabel);
+
+
+
+	//i = getrusage(RUSAGE_SELF,&tmp);
+	//seconds = tmp.ru_utime.tv_sec-seconds;
+	//microsecs = tmp.ru_utime.tv_usec-microsecs;
+	//printf("GRAPH SETUP cpu = %5.2f\n",
+	//	seconds+(microsecs/1000000.0));
+
+	/* perform color search */
+
+	/* Random initialization for search */
+	//printf("Enter seed for search randomization: ");
+	//scanf("%d",&seed);
+	//printf(" %d\n",seed);
+	//srandom(seed);
+	 srand( (unsigned)time( NULL ) );
+
+	//i = getrusage(RUSAGE_SELF,&tmp);
+	//seconds = tmp.ru_utime.tv_sec;
+	//microsecs = tmp.ru_utime.tv_usec;
+	colorsearch(argv[1], m_ColorLabel, m_numColor);
+
+	m_faceColors.resize(m_numColor);
+	float r,g,b;
+	for(int i = 0; i< m_numColor; i++)
+	{
+		r = rand()/(double)RAND_MAX; 
+		g = rand()/(double)RAND_MAX; 
+		b = rand()/(double)RAND_MAX;
+		m_faceColors[i] = Color(r,g,b);
+	}
+
+}
+
+
+//void meshFIM::GraphPartition_Simple(int Kring, int numBlock)
+//{
+//	int numVert = m_meshPtr->vertices.size();
+//	if (numVert <= 0)
+//	{
+//		cout << "No vertices in the mesh for partitioning!!" << endl;
+//		return;
+//
+//	}
+//
+//	m_PartitionLabel.resize(numVert);
+//
+//	for (int i =0; i<numVert; i++)
+//	{
+//
+//		m_PartitionLabel[i] = -1;
+//	}
+//	
+//	vector<point>::iterator iter;
+//	vector<point>  vertices = m_meshPtr->vertices;
+//
+//	/////////////step1: pick the block seed points: garantee they are at least of distance Kring////////////////////////
+//
+//	vector<bool> isRemoved;
+//	isRemoved.resize(numVert);
+//	for (int i =0; i< numVert; i++)
+//	{
+//		isRemoved[i] = false;
+//	}
+//	
+//	m_BlockPoints.resize(numBlock);
+//
+//
+//	int idxBlock = 0;
+//	bool twice;
+//	vector<int> nbs;
+//	set<int> nbs2, 
+//	vector<int> tmpNbs;
+//
+//	for (idxBlock = 0; idxBlock < numBlock; idxBlock ++)
+//	{
+//		twice = false;
+//		for (int i = idxBlock * numVert / numBlock;i<numVert;i++)
+//		{
+//			if(isRemoved[i] == false)
+//			{
+//				m_BlockPoints[idxBlock] = i;
+//				//m_meshPtr->colors[i] = Color(0,0,1);
+//				isRemoved[i] = true;
+//				break;
+//			}
+//			if(i==numVert-1 && !twice)
+//			{
+//				i = 0;
+//				twice = true;
+//				continue;
+//			}
+//			if(i==numVert-1 && twice)
+//			{
+//				cout << "All points are removed!!" <<endl;
+//			
+//				return;
+//			}
+//		}
+//
+//
+//
+//		nbs = m_meshPtr->neighbors[m_BlockPoints[idxBlock]];
+//
+//		for (int k=0; k< nbs.size(); k++)
+//		{
+//			isRemoved[nbs[k]] = true;
+//	
+//		}
+//		
+//
+//		for (int j =0; j< Kring-1; j++)
+//		{
+//			
+//			nbs2.clear();
+//
+//			for (int k = 0; k < nbs.size(); k++)
+//			{
+//				tmpNbs = m_meshPtr->neighbors[nbs[k]];
+//				for(int q = 0; q <  tmpNbs.size(); q++)
+//				{
+//					nbs2.insert(nbs2.begin(), tmpNbs[q]);
+//					if (isRemoved[tmpNbs[q]] == false)
+//					{
+//						
+//						isRemoved[ tmpNbs[q] ] = true;
+//					}
+//				}
+//				
+//				
+//			}
+//			set<int>::iterator iter;
+//			nbs.clear();
+//			for(iter = nbs2.begin(); iter != nbs2.end(); iter++)
+//			{
+//				nbs.push_back(*iter);
+//			}
+//			
+//			
+//
+//		}
+//		nbs.clear();
+//		nbs2.clear();
+//		tmpNbs.clear();
+//		
+//
+//
+//	}
+//
+//	/////////////////////////////step 2: partition points/////////////////////////////////////////
+//	
+//	vector<  vector<int> > nb;
+//	nb.resize(numBlock);
+//
+//	
+//	for(int i =0; i< numBlock; i++)
+//	{
+//		nb[i] = m_meshPtr->neighbors[m_BlockPoints[i]];
+//
+//		m_PartitionLabel[m_BlockPoints[i]] = i;
+//
+//		for (int j=0; j< nb[i].size(); j++)
+//		{
+//			if(m_PartitionLabel[nb[i][j]] == -1)
+//			{
+//				m_PartitionLabel[nb[i][j]] = i;
+//
+//			}
+//	
+//		}
+//
+//	}
+//
+//
+//	bool HasMinusOne;
+//	m_BlockNbPts.resize(numBlock);
+//	m_BlockNeighbor.resize(numBlock);
+//
+//
+//	
+//
+//	vector<int>  tmpNbs2, tmpNbs3;
+//
+//	while(1)
+//	{
+//		HasMinusOne = false;
+//
+//		for(int i = 0; i< numVert; i++)
+//			if(m_PartitionLabel[i] == -1)
+//			{
+//				HasMinusOne = true;
+//				break;
+//
+//			}
+//		if(HasMinusOne)              //if there are still particle not assigned partition 
+//		{
+//			for(int i =0; i< numBlock; i++)
+//			{
+//
+//				tmpNbs3.clear();
+//				tmpNbs2.clear();
+//
+//				for (int j = 0; j < nb[i].size(); j++)
+//				{
+//					tmpNbs2 = m_meshPtr->neighbors[nb[i][j]];
+//					for(int q = 0; q <  tmpNbs2.size(); q++)
+//					{
+//						if (m_PartitionLabel[tmpNbs2[q]] == -1)
+//						{
+//							tmpNbs3.push_back(tmpNbs2[q]);
+//							m_PartitionLabel[ tmpNbs2[q] ] = i;
+//						}
+//
+//						else
+//						{
+//							for(int part = 0; part < numBlock; part++)
+//							{
+//								if(m_PartitionLabel[tmpNbs2[q]] == part && m_PartitionLabel[tmpNbs2[q]] != i)
+//								{
+//									m_BlockNeighbor[i].insert(m_BlockNeighbor[i].begin(), part);
+//									m_BlockNbPts[i].insert(m_BlockNbPts[i].begin(),tmpNbs2[q]);
+//								}
+//							}
+//						}
+//					}
+//				
+//				
+//				}
+//				nb[i] = tmpNbs3;
+//
+//			}
+//		}
+//		else
+//		{
+//			for(int i =0; i< numBlock; i++)
+//			{
+//
+//				tmpNbs3.clear();
+//				tmpNbs2.clear();
+//
+//				for (int j = 0; j < nb[i].size(); j++)
+//				{
+//					tmpNbs2 = m_meshPtr->neighbors[nb[i][j]];
+//					for(int q = 0; q <  tmpNbs2.size(); q++)
+//					{
+//						//if (m_PartitionLabel[tmpNbs2[q]] != -1 && m_PartitionLabel[tmpNbs2[q]] != i)
+//						//{
+//						//	//m_BlockNbPts[i].push_back(tmpNbs2[q]);
+//						//	m_BlockNbPts[i].insert(m_BlockNbPts[i].begin(),tmpNbs2[q]);
+//					
+//						//}
+//
+//						for(int part = 0; part < numBlock; part++)
+//						{
+//							if(m_PartitionLabel[tmpNbs2[q]] == part && m_PartitionLabel[tmpNbs2[q]] != i)
+//							{
+//								m_BlockNeighbor[i].insert(m_BlockNeighbor[i].begin(), part);
+//								m_BlockNbPts[i].insert(m_BlockNbPts[i].begin(),tmpNbs2[q]);
+//							}
+//						}
+//						
+//					}
+//				
+//				
+//				}
+//				
+//
+//			}
+//			break;
+//		}
+//	}
+//
+//
+//
+//	/////////////////////////////////////step 3: partition faces//////////////////////////////////////
+//	//m_PartitionFaces.resize(numBlock);
+//	//m_PartitionNbFaces.resize(numBlock);
+//
+//	//int numFaces = m_meshPtr->faces.size();
+//	//TriMesh::Face f;
+//	//int labelv0;
+//	//int labelv1;
+//	//int labelv2;
+//	//for(int i = 0; i < numFaces; i++)
+//	//{
+//	//	f = m_meshPtr->faces[i];
+//
+//	//	labelv0 = m_PartitionLabel[f[0]];
+//	//	labelv1 = m_PartitionLabel[f[1]];
+//	//	labelv2 = m_PartitionLabel[f[2]];
+//
+//	//	if(labelv0 == labelv1 && labelv1 == labelv2)
+//	//		m_PartitionFaces[labelv0].push_back(i);
+//	//	else if(labelv0 == labelv1 && labelv1 != labelv2)
+//	//	{
+//	//		m_PartitionNbFaces[labelv0].push_back(i);
+//	//		m_PartitionNbFaces[labelv2].push_back(i);
+//
+//	//	}
+//	//	else if(labelv0 != labelv1 && labelv1 == labelv2)
+//	//	{
+//	//		m_PartitionNbFaces[labelv0].push_back(i);
+//	//		m_PartitionNbFaces[labelv2].push_back(i);
+//
+//	//	}
+//
+//	//	else if(labelv0 == labelv2 && labelv1 == labelv2)
+//	//	{
+//	//		m_PartitionNbFaces[labelv0].push_back(i);
+//	//		m_PartitionNbFaces[labelv1].push_back(i);
+//
+//	//	}
+//
+//	//	else      //all different
+//	//	{
+//	//		m_PartitionNbFaces[labelv0].push_back(i);
+//	//		m_PartitionNbFaces[labelv1].push_back(i);
+//	//		m_PartitionNbFaces[labelv2].push_back(i);
+//
+//
+//	//	}
+//
+//	//}
+//
+//	//vector<int> PartitionToltalFaces;
+//	//PartitionToltalFaces.resize(numBlock);
+//	//int maxNumFaces = 0;
+//	//for(int j = 0; j < numBlock; j++)
+//	//{
+//
+//
+//	//	PartitionToltalFaces[j] = m_PartitionFaces[j].size() + m_PartitionNbFaces[j].size();
+//	//	maxNumFaces = MAX(PartitionToltalFaces[j],maxNumFaces );
+//	//}
+//
+//    
+//
+//
+//	/////////////////////////////step 4: compute the size of each block and color each region/////////////////////////////////
+//
+//	 srand( (unsigned)time( NULL ) );
+//
+//
+//
+//
+//	m_BlockSizes.resize(numBlock);
+//
+//	 //m_BlockSizes = new int[numBlock];
+//	 for(int i =0; i<numBlock; i++)
+//		 m_BlockSizes[i] = 0;
+//
+//	float r,g,b;
+//
+//	
+//
+//	vector< Color > colors;
+//	colors.resize(numBlock);
+//	for(int i = 0; i< numBlock; i++)
+//	{
+//		r = rand()/(double)RAND_MAX; 
+//		g = rand()/(double)RAND_MAX; 
+//		b = rand()/(double)RAND_MAX;
+//		colors[i] = Color(r,g,b);
+//	}
+//	m_meshPtr->colors.resize(numVert);
+//
+//	for(int i = 0; i<numVert; i++)
+//	{
+//
+//		 
+//		m_BlockSizes[m_PartitionLabel[i]]++;
+//		m_meshPtr->colors[i] = colors[m_PartitionLabel[i]];
+//
+//	}
+//}
+
+
+/////////////////////////////////////////////////////////////////////////////
+
+void meshFIM::GraphPartition_METIS(char* partfilename, int numBlock)
+{
+	int numVert = m_meshPtr->vertices.size();
+	//m_PartitionLabel = new int[numVert];
+	m_PartitionLabel.resize(numVert);
+	FILE* partFile = fopen(partfilename, "r+");
+	if(partFile == NULL)
+	{
+		printf("NO part file found!!!!\n");
+		exit(1);
+	}
+
+
+	int tmp;
+
+	for(int i = 0; i < numVert; i++)
+	{
+		fscanf(partFile, "%d", &m_PartitionLabel[i]);
+		
+
+	}
+
+		 srand( (unsigned)time( NULL ) );
+
+
+
+
+	m_BlockSizes.resize(numBlock);
+
+	 //m_BlockSizes = new int[numBlock];
+	 for(int i =0; i<numBlock; i++)
+		 m_BlockSizes[i] = 0;
+
+	float r,g,b;
+
+	
+
+	vector< Color > colors;
+	colors.resize(numBlock);
+	for(int i = 0; i< numBlock; i++)
+	{
+		r = rand()/(double)RAND_MAX; 
+		g = rand()/(double)RAND_MAX; 
+		b = rand()/(double)RAND_MAX;
+		colors[i] = Color(r,g,b);
+	}
+	m_meshPtr->colors.resize(numVert);
+	m_PartitionVerts.resize(numBlock);
+
+	for(int i = 0; i<numVert; i++)
+	{
+		m_PartitionVerts[m_PartitionLabel[i]].push_back(i);
+
+		 
+		m_BlockSizes[m_PartitionLabel[i]]++;
+		m_meshPtr->colors[i] = colors[m_PartitionLabel[i]];
+
+	}
+
+	m_maxNumVert = 0;
+
+	for(int i = 0 ; i < numBlock; i++)
+	{
+
+		m_maxNumVert = MAX(m_maxNumVert, m_BlockSizes[i]);
+	}
+
+
+
+
+
+}
+
+void meshFIM::PartitionFaces(int numBlock)
+{
+		/////////////////////////////////////step 3: partition faces//////////////////////////////////////
+	m_PartitionFaces.resize(numBlock);
+	m_PartitionNbFaces.resize(numBlock);
+
+	int numFaces = m_meshPtr->faces.size();
+	TriMesh::Face f;
+	int labelv0;
+	int labelv1;
+	int labelv2;
+	vector<TriMesh::Face> virtualfaces;
+	vector<int> virtualFaceCnt;
+
+	virtualFaceCnt.resize(numBlock);
+	m_PartitionVirtualFaces.resize(numBlock);
+
+	for(int i = 0; i< numBlock; i++)
+		virtualFaceCnt[i] = 0;
+
+	m_BlockNeighbor.resize(numBlock);
+
+	for(int i = 0; i < numFaces; i++)
+	{
+		f = m_meshPtr->faces[i];
+		int vfCnt = m_meshPtr->faceVirtualFaces[i].size();
+
+		for(int k = 0 ; k < 3; k++)
+		{
+			if(!m_meshPtr->IsNonObtuse(f[k], f))
+			{
+				virtualFaceCnt[m_PartitionLabel[f[k]]] += vfCnt;
+				m_PartitionVirtualFaces[m_PartitionLabel[f[k]]].insert(m_PartitionVirtualFaces[m_PartitionLabel[f[k]]].end(), m_meshPtr->faceVirtualFaces[i].begin(), m_meshPtr->faceVirtualFaces[i].end());
+			}
+
+		}
+
+
+
+
+
+		labelv0 = m_PartitionLabel[f[0]];
+		labelv1 = m_PartitionLabel[f[1]];
+		labelv2 = m_PartitionLabel[f[2]];
+
+		if(labelv0 == labelv1 && labelv1 == labelv2)
+		{
+			m_PartitionFaces[labelv0].push_back(i);
+			//virtualFaceCnt[labelv0] += vfCnt;
+		}
+		else if(labelv0 == labelv1 && labelv1 != labelv2)
+		{
+			m_PartitionNbFaces[labelv0].push_back(i);
+			m_PartitionNbFaces[labelv2].push_back(i);
+
+			m_BlockNeighbor[labelv0].insert(m_BlockNeighbor[labelv0].end(), labelv2);
+			m_BlockNeighbor[labelv2].insert(m_BlockNeighbor[labelv2].end(), labelv0);
+
+
+			//virtualFaceCnt[labelv0] += vfCnt;
+			//virtualFaceCnt[labelv2] += vfCnt;
+
+
+
+		}
+		else if(labelv0 != labelv1 && labelv1 == labelv2)
+		{
+			m_PartitionNbFaces[labelv0].push_back(i);
+			m_PartitionNbFaces[labelv2].push_back(i);
+
+			m_BlockNeighbor[labelv0].insert(m_BlockNeighbor[labelv0].end(), labelv2);
+			m_BlockNeighbor[labelv2].insert(m_BlockNeighbor[labelv2].end(), labelv0);
+
+			//virtualFaceCnt[labelv0] += vfCnt;
+			//virtualFaceCnt[labelv2] += vfCnt;
+
+
+		}
+
+		else if(labelv0 == labelv2 && labelv1 != labelv2)
+		{
+			m_PartitionNbFaces[labelv0].push_back(i);
+			m_PartitionNbFaces[labelv1].push_back(i);
+
+			m_BlockNeighbor[labelv0].insert(m_BlockNeighbor[labelv0].end(), labelv1);
+			m_BlockNeighbor[labelv1].insert(m_BlockNeighbor[labelv1].end(), labelv0);
+
+			//virtualFaceCnt[labelv0] += vfCnt;
+			//virtualFaceCnt[labelv1] += vfCnt;
+
+		}
+
+		else      //all different
+		{
+			m_PartitionNbFaces[labelv0].push_back(i);
+			m_PartitionNbFaces[labelv1].push_back(i);
+			m_PartitionNbFaces[labelv2].push_back(i);
+
+			m_BlockNeighbor[labelv0].insert(m_BlockNeighbor[labelv0].end(), labelv2);
+			m_BlockNeighbor[labelv2].insert(m_BlockNeighbor[labelv2].end(), labelv0);
+			m_BlockNeighbor[labelv0].insert(m_BlockNeighbor[labelv0].end(), labelv1);
+			m_BlockNeighbor[labelv1].insert(m_BlockNeighbor[labelv1].end(), labelv0);
+			m_BlockNeighbor[labelv1].insert(m_BlockNeighbor[labelv1].end(), labelv2);
+			m_BlockNeighbor[labelv2].insert(m_BlockNeighbor[labelv2].end(), labelv1);
+
+			//virtualFaceCnt[labelv0] += vfCnt;
+			//virtualFaceCnt[labelv1] += vfCnt;
+			//virtualFaceCnt[labelv2] += vfCnt;
+
+
+		}
+
+	}
+
+	vector<int> PartitionToltalFaces;
+	PartitionToltalFaces.resize(numBlock);
+	m_maxNumTotalFaces = 0;
+	for(int j = 0; j < numBlock; j++)
+	{
+
+
+		PartitionToltalFaces[j] = m_PartitionFaces[j].size() + m_PartitionNbFaces[j].size() + virtualFaceCnt[j];
+		m_maxNumTotalFaces = MAX(PartitionToltalFaces[j],m_maxNumTotalFaces );
+	}
+}
+
+
+__device__ inline d_Point PointSub(d_Point B, d_Point A)
+{
+	d_Point AB = {B.coord[0] - A.coord[0], B.coord[1] - A.coord[1],B.coord[2] - A.coord[2]}; 
+	return AB;
+
+}
+
+__device__ inline float PointLength(d_Point A)
+{
+	return sqrt(A.coord[0]*A.coord[0] + A.coord[1]*A.coord[1] + A.coord[2]*A.coord[2]);
+
+}
+
+__device__ float LocalSolver(float* d_vertT, int vet, d_Face triangle, float* d_Vertices , d_Point s_points[], int s_index[])
+{
+	d_Point A,B;
+	//d_Point C = {d_Vertices[vet*DIMENSION + 0], d_Vertices[vet*DIMENSION + 1], d_Vertices[vet*DIMENSION + 1]};
+	d_Point C = access(vet);
+	float TA, TB, TC;
+
+	float speedI = 1;
+	int j;
+	d_Point tmpPoint;
+
+	for (j=0;j<3;j++)
+	{
+		tmpPoint = access(triangle.v[j]);
+		if (tmpPoint.coord[0]==C.coord[0] &&
+			tmpPoint.coord[1]==C.coord[1] &&
+			tmpPoint.coord[2]==C.coord[2] )
+			break;
+
+	}
+	if (j==0)
+	{
+		A = access(triangle.v[1]);
+		B = access(triangle.v[2]);
+
+		TA = d_vertT[triangle.v[1]];
+		TB = d_vertT[triangle.v[2]];
+		TC = d_vertT[triangle.v[0]];
+
+	}
+
+	if (j==1)
+	{
+
+
+		A = access(triangle.v[2]);
+		B = access(triangle.v[0]);
+
+		TA = d_vertT[triangle.v[2]];
+		TB = d_vertT[triangle.v[0]];
+		TC = d_vertT[triangle.v[1]];
+
+	}
+
+	if (j==2)
+	{
+
+
+		A = access(triangle.v[0]);
+		B = access(triangle.v[1]);
+
+		TA = d_vertT[triangle.v[0]];
+		TB = d_vertT[triangle.v[1]];
+		TC = d_vertT[triangle.v[2]];
+	}
+
+
+	d_Point AB = PointSub(B,A); 
+	
+	float LenAB = PointLength(AB);
+
+	
+
+	d_Point BC =PointSub( C , B);
+	d_Point BA = PointSub(A, B);
+
+	d_Point AC = PointSub(C, A);
+
+	float LenBC = PointLength(BC);
+	float LenBA = PointLength(BA);
+
+	float LenAC = PointLength(AC);
+
+	float TAB, squareAB, squareAC, multiAB_AC, a,b,c,delta, lamda1, lamda2, TC1, TC2, EdgeTA, EdgeTB;
+
+	EdgeTA = TA + LenAC * speedI;
+	EdgeTB = TB + LenBC * speedI;
+
+	if (TA==LARGENUM && TB == LARGENUM)
+	{
+		TC = MIN(TC, MIN(EdgeTA,EdgeTB) );
+		return TC;
+	}
+
+	TAB = TB - TA;
+	squareAB = AB.coord[1]*AB.coord[1] + AB.coord[2]*AB.coord[2] + AB.coord[0]*AB.coord[0];
+	squareAC  = AC.coord[1] *AC.coord[1] + AC.coord[2] * AC.coord[2] + AC.coord[0]*AC.coord[0];
+	multiAB_AC = AC.coord[1]*AB.coord[1] + AC.coord[2]*AB.coord[2] + AC.coord[0]*AB.coord[0];
+
+	a = speedI*speedI*squareAB*squareAB - TAB * TAB *squareAB;
+	b = (TAB*TAB*multiAB_AC -speedI*speedI* multiAB_AC*squareAB)*2;
+	c = speedI*speedI*multiAB_AC*multiAB_AC - TAB*TAB*squareAC;
+
+	delta = b*b - 4*a*c;		
+
+	float tmp;
+
+	if (a==0.0)
+	{
+		//double AB_AC = (AB^AC);
+		//tmp = TA + speedI * AB_AC/ LenAB; 
+		//return MIN(TC,tmp);
+		TC = MIN(TC, MIN(EdgeTA,EdgeTB) );
+	}
+
+	else if (/*abs(TA - TB) <= LenBA * speedI*/ a > 0)
+	{
+		//float theta = asin(abs(TA-TB)/(LenAB*speed));
+
+		//if ((MAX(0,alpha - PI / 2) <= theta && theta <= PI/2 - beta) || (alpha - PI/2 <= theta && theta <= MIN(0,PI/2 - beta)))
+		//{
+		//	float h = LenBC * sin(alpha - theta);
+		//	float H = LenAC * sin(beta + theta);
+		//	TC = MIN(TC,0.5 * (h * speed + TB) + 0.5 * (H * speed + TA));
+		//}
+		//else
+		//{
+		//	TC = MIN(TC, TA + LenAC * speed );
+		//	TC = MIN(TC, TB + LenBC * speed);
+		//}
+
+		 
+		 
+		 
+
+			 lamda1 = (-b + sqrt(delta))/(2*a);
+			 lamda2 = (-b - sqrt(delta))/(2*a);
+		 
+
+		 
+		 
+
+		 d_Point tmp1;
+		 tmp1.coord[0]= AC.coord[0] - lamda1*AB.coord[0];
+		 tmp1.coord[1]= AC.coord[1] - lamda1*AB.coord[1];
+		 tmp1.coord[2]= AC.coord[2] - lamda1*AB.coord[2];
+
+		 d_Point tmp2;
+		 tmp2.coord[0]= AC.coord[0] - lamda2*AB.coord[0];
+		 tmp2.coord[1]= AC.coord[1] - lamda2*AB.coord[1];
+		 tmp2.coord[2]= AC.coord[2] - lamda2*AB.coord[2];
+
+		TC1 = lamda1*TAB+PointLength(tmp1)*speedI + TA;
+		TC2 = lamda2*TAB+PointLength(tmp2)*speedI + TA;
+
+
+
+		if (TC1<TC2)
+		{
+			if (lamda1>=0&&lamda1<=1)
+			{
+				TC = MIN(TC,TC1);
+
+			}
+			else
+				TC = MIN(TC, MIN(EdgeTA,EdgeTB) );
+		}
+		else
+		{
+			if (lamda2>=0&&lamda2<=1)
+			{
+				TC = MIN(TC,TC2);
+
+			}
+			else
+				TC = MIN(TC, MIN(EdgeTA,EdgeTB) );
+
+		}
+
+	}
+
+	else
+	{
+
+		TC = MIN(TC, MIN(EdgeTA,EdgeTB) );
+
+	}
+
+	return TC;
+
+	
+	
+
+
+
+
+
+
+}
+
+__device__ float Upwind(float* d_vertT,float * d_vertices, int idx,int* d_neighbors, d_Face* d_NonObtuseNeighborFaces,d_Point s_points[], int s_index[])
+{
+	float result=LARGENUM;
+	float tmp;
+
+
+	int i;
+	for (i=0;d_NonObtuseNeighborFaces[idx*MAXNUMNEIGHBOR+i].v[0] != -1;i++)
+	{
+		tmp = LocalSolver(d_vertT, idx, d_NonObtuseNeighborFaces[idx*MAXNUMNEIGHBOR+i],d_vertices ,s_points, s_index  );
+
+		result = MIN(result,tmp );
+		d_vertT[idx] = result;
+	}
+
+	return result;
+}
+
+
+//extern __shared__ char s_reduct_array[];
+
+
+__global__ void run_reduction(int *con, int *blockCon,int* ActiveList, int nActiveBlock, int* blockSizes)
+{
+	int list_idx = blockIdx.y*gridDim.x + blockIdx.x;
+	
+
+	if(list_idx < nActiveBlock)
+	{
+		int block_idx = ActiveList[list_idx];
+
+		int blocksize = blockSizes[block_idx];
+
+		//int* s_conv = (int*)s_reduct_array;
+		//__shared__ int s_conv[32];
+		__shared__ int s_conv[REDUCTIONSHARESIZE];
+
+
+	//	//uint blocksize = BLOCK_LENGTH*BLOCK_LENGTH*BLOCK_LENGTH/2;
+		uint base_addr = block_idx*blockDim.x*2;   // *2 because there are only half block size number of thread
+	    uint tx = threadIdx.x;
+
+
+		s_conv[tx] = con[base_addr + tx];
+		s_conv[tx + blockDim.x] = con[base_addr + tx + blockDim.x];
+
+
+	//	//uint tz = threadIdx.z;
+	//	//uint tIdx = tz*BLOCK_LENGTH*BLOCK_LENGTH + ty*BLOCK_LENGTH + tx;
+
+	//	uint tIdx = threadIdx.x;
+
+	//	if(tIdx < blocksize)
+	//		conv[tIdx] = con[base_addr + tIdx];
+	//	else
+
+	//		conv[tIdx] = true;
+	//	//conv[tIdx + blocksize] = con[base_addr + tIdx + blocksize];
+
+		__syncthreads();
+
+		for(uint i=blockDim.x; i>0; i/=2)
+		{
+			if(tx < i)
+			{
+				bool b1, b2;
+				b1 = s_conv[tx];
+				b2 = s_conv[tx+i];
+				s_conv[tx] = (b1 && b2) ? 1 : 0 ;
+			}
+			__syncthreads();
+		}
+
+		if(tx == 0) 
+		{		
+			blockCon[block_idx] = s_conv[0]; // active list is negation of tile convergence (active = not converged)
+		}
+	}
+}
+
+
+extern __shared__ char s_array[];
+
+
+
+__global__ static void FIMCuda(float* d_triMem,int* d_vertMem, int* d_BlockSizes, int* d_con, int* ActiveList, int nActiveBlock,int maxNumTotalFaces, int maxNumVert,int nIter, float m_StopDistance)
+{
+	uint list_idx = blockIdx.y*gridDim.x + blockIdx.x;
+	//int sizeofint = sizeof(int);
+	//int sizeoffloat = sizeof(float);
+	//int sizeofbool = sizeof(bool);
+	//int sizeofuint = sizeof(uint);
+	//int sizeofshort = sizeof(short);
+	
+
+	
+
+	if(list_idx < nActiveBlock)
+	{
+
+		//unsigned int timer = 0;
+		//CUT_SAFE_CALL( cutCreateTimer( &timer));
+	
+		//CUT_SAFE_CALL( cutStartTimer( timer));
+		// retrieve actual block index from the active list
+		uint block_idx = ActiveList[list_idx];
+		int block_size = d_BlockSizes[block_idx];
+
+		double speedI = 1;
+		//bool isValid;
+
+		////////////////////////////////////////initialize shared memory//////////////////////////////////////////
+
+
+		//uint blocksize = BLOCK_LENGTH*BLOCK_LENGTH*BLOCK_LENGTH;
+		uint tri_base_addr = block_idx*maxNumTotalFaces*TRIMEMLENGTH;
+		uint vert_base_addr = block_idx*maxNumVert*VERTMEMLENGTH;
+
+		uint tx = threadIdx.x;
+
+
+		float* s_triMem  = (float*)s_array;
+		int*   s_vertMem = (int*)&s_triMem[maxNumTotalFaces*TRIMEMLENGTH];
+		//__shared__ float s_triMem[927];
+		//__shared__ int   s_vertMem[608];
+
+		//__shared__ float s_triMem[1557];
+		//__shared__ int   s_vertMem[1088];
+
+		//__shared__ float s_triMem[1620];
+		//__shared__ int   s_vertMem[1088];
+		
+
+
+		for(int i = 0; i< TRIMEMLENGTH; i++)
+		{
+			s_triMem[tx*TRIMEMLENGTH + i] = d_triMem[tri_base_addr + tx * TRIMEMLENGTH + i];
+		}
+
+		if(tx < maxNumVert)
+			for(int i = 0; i< VERTMEMLENGTH; i++)
+			{
+				s_vertMem[tx*VERTMEMLENGTH + i] = d_vertMem[vert_base_addr+tx*VERTMEMLENGTH + i] - tri_base_addr;
+
+			}
+
+		__syncthreads();
+
+		//CUT_SAFE_CALL( cutStopTimer( timer));
+	 //   printf("FIMCuda Processing time: %f (ms)\n", cutGetTimerValue( timer));
+
+
+		/////////////////////////////////////////done shared memory copy//////////////////////////////////////////////////
+
+
+		float a,b,c, delta, cosA, lamda1, lamda2, TC1, TC2;
+		float TAB, TA, TB, TC;
+		int A, B, C;
+		float squareAB;
+		float LenAB, LenBC, LenAC, LenCD, LenAD, EdgeTA, EdgeTB;
+		float tmpOldTC;
+
+		float oldT, newT;
+
+		
+
+		
+
+		for(int iter=0; iter<nIter; iter++)	
+		{
+			//
+			// compute new value
+			//
+			for(int i = 0; i< 3; i++)
+			{
+				A = (i+1)%3;
+				B = (i+2)%3;
+				C =  i;
+
+				TA = s_triMem[tx*TRIMEMLENGTH + 3 + A]; 
+				TB = s_triMem[tx*TRIMEMLENGTH + 3 + B]; 
+				TC = s_triMem[tx*TRIMEMLENGTH + 3 + C]; 
+
+				if(TA >= LARGENUM && TB >= LARGENUM && TC >= LARGENUM)  //if all values are large,break
+					break;
+
+				
+				if(s_triMem[tx*TRIMEMLENGTH + 6 + i] == -1 )  //if this tri is virtual and this is not the main vertex, continue
+					continue;
+
+				
+
+				
+
+				TC1 = LARGENUM;
+				TC2 = LARGENUM;
+
+				
+
+
+				TAB = TB - TA;
+
+				LenAB = s_triMem[tx*TRIMEMLENGTH + A];     // the index should be tx*TRIMEMLENGTH + (i+1)%3
+				LenBC = s_triMem[tx*TRIMEMLENGTH + B];     // the index should be tx*TRIMEMLENGTH + (i+2)%3
+				LenAC = s_triMem[tx*TRIMEMLENGTH + C];     // the index should be tx*TRIMEMLENGTH + i
+
+
+				a = (speedI*speedI*LenAB*LenAB - TAB * TAB)*LenAB*LenAB;
+
+				EdgeTA = TA + LenAC * speedI;
+				EdgeTB = TB + LenBC * speedI;
+
+				
+
+				if (a > 0)
+				{
+
+					cosA = (LenAC * LenAC + LenAB * LenAB - LenBC * LenBC) / (2 * LenAC * LenAB);
+
+					b = 2 * LenAB * LenAC * cosA * (speedI*speedI*LenAB*LenAB - TAB * TAB);
+					delta = 4 * LenAC * LenAC  * a *  TAB * TAB * (1 - cosA * cosA);
+
+					lamda1 = (-b + sqrt(delta))/(2*a);
+					lamda2 = (-b - sqrt(delta))/(2*a);
+
+					if (lamda1>=0&&lamda1<=1)
+					{
+						LenAD = lamda1*LenAB;
+
+						LenCD = sqrt(LenAC*LenAC+LenAD*LenAD-2*LenAC*LenAD*cosA);
+
+						TC1 = lamda1*TAB+TA+LenCD*speedI;
+
+					}
+					if(lamda2>=0&&lamda2<=1)
+					{
+						LenAD = lamda1*LenAB;
+
+						LenCD = sqrt(LenAC*LenAC+LenAD*LenAD-2*LenAC*LenAD*cosA);
+
+						TC2 = lamda1*TAB+TA+LenCD*speedI;
+
+					}
+
+					
+					TC = MIN(TC, MIN(TC2, MIN(TC1,MIN(EdgeTA,EdgeTB))) );
+
+				}
+
+				else
+				{
+					TC = MIN(TC, MIN(EdgeTA,EdgeTB) );
+
+				}
+
+				s_triMem[tx*TRIMEMLENGTH + 6 + C] = TC; 
+
+				
+
+
+
+			}
+
+			__syncthreads();
+
+///////////////////////////////////////////////////////////////////////////////////////////////////
+
+			TC = LARGENUM;
+			
+			if(tx < block_size)    //block_size is the vertices in this block and it is about warp size so there is no severe divergence
+			{
+				int tmp2;
+				for(int j = 0; j < VERTMEMLENGTH ; j++)                        // find the min
+				{
+					tmp2 = s_vertMem[tx * VERTMEMLENGTH + j];
+					if( tmp2 >= 0  && tmp2 < maxNumTotalFaces*TRIMEMLENGTH)
+						if(s_triMem[tmp2+3] != -1)
+						{
+							TC = MIN(TC,s_triMem[tmp2+3]);
+							oldT = s_triMem[tmp2];
+
+						}
+				}
+
+				//oldT = s_triMem[s_vertMem[tx * VERTMEMLENGTH]];               //keep the old T for convergence check
+				newT = TC;
+				int meiyongde = 0;
+					
+				for(int j =0; j < VERTMEMLENGTH; j++) // update all the old to the min
+				{    
+					tmp2 = s_vertMem[tx * VERTMEMLENGTH + j];
+					if( tmp2 >= 0  && tmp2 < maxNumTotalFaces*TRIMEMLENGTH)
+						s_triMem[tmp2] = TC;
+				}
+			}
+					
+					
+
+				
+
+			__syncthreads(); 		
+		}
+
+
+		if(tx < block_size)
+		{			
+			float residue = oldT - newT;
+			int tmpindex;
+			d_con[block_idx*maxNumVert + tx] = (residue < EPS) ? 1 : 0;
+
+			for(int j = 0; j < VERTMEMLENGTH; j++) // update gloal memory  all the old to the min
+			{  
+				tmpindex = s_vertMem[tx * VERTMEMLENGTH + j];
+				if( tmpindex != -1)
+					d_triMem[tmpindex + tri_base_addr] = newT;
+			}
+
+		}
+		else if(tx < maxNumVert)
+		{
+			d_con[block_idx*maxNumVert + tx] = 1;   //assign the rest 1 so that in reduction, these values can be & with the effective values
+			int meiyongde = 0;
+		}
+
+	}
+	
+}
+
+extern __shared__ float s_run_check_neghbor_array[];
+
+__global__ static void copyshared(float* d_triMem,int* d_vertMem,int* d_BlockSizes, int* d_con,int* d_ActiveList, int numOldActive ,int maxNumTotalFaces, int maxNumVert,int nTotalActive, int m_StopDistance)
+{
+
+	uint list_idx = blockIdx.y*gridDim.x + blockIdx.x;
+
+
+	if(list_idx < nTotalActive - numOldActive)
+	{
+		// retrieve actual block index from the active list
+		uint block_idx = d_ActiveList[list_idx + numOldActive];
+		int block_size = d_BlockSizes[block_idx];
+
+		double speedI = 1;
+		//bool isValid;
+
+		////////////////////////////////////////initialize shared memory//////////////////////////////////////////
+
+
+		//if(list_idx >= numOldActive) // copy value
+		//{
+		//	
+		//} 
+		//else
+		//{
+			//uint blocksize = BLOCK_LENGTH*BLOCK_LENGTH*BLOCK_LENGTH;
+			uint tri_base_addr = block_idx*maxNumTotalFaces*TRIMEMLENGTH;
+			uint vert_base_addr = block_idx*maxNumVert*VERTMEMLENGTH;
+
+			uint tx = threadIdx.x;
+
+			float* s_triMem  = (float*)s_run_check_neghbor_array;
+			int*   s_vertMem = (int*)&s_triMem[maxNumTotalFaces*TRIMEMLENGTH];
+			//__shared__ float s_triMem[927];
+		    //__shared__ int   s_vertMem[608];
+			//__shared__ float s_triMem[1557];
+			//__shared__ int   s_vertMem[1088];
+
+			//__shared__ float s_triMem[1620];
+			//__shared__ int   s_vertMem[1088];
+
+
+			for(int i = 0; i< TRIMEMLENGTH; i++)
+			{
+				s_triMem[tx*TRIMEMLENGTH + i] = d_triMem[tri_base_addr + tx * TRIMEMLENGTH + i];
+			}
+
+			if(tx < maxNumVert)
+				for(int i = 0; i< VERTMEMLENGTH; i++)
+				{
+					s_vertMem[tx*VERTMEMLENGTH + i] = d_vertMem[vert_base_addr+tx*VERTMEMLENGTH + i] - tri_base_addr;
+
+				}
+
+
+			//float* s_triMem  = (float*)s_run_check_neghbor_array;
+			//int*   s_vertMem = (int*)&s_triMem[maxNumTotalFaces*TRIMEMLENGTH];
+
+
+			//for(int i = 0; i< maxNumTotalFaces*TRIMEMLENGTH; i++)
+			//{
+			//	s_triMem[i] = d_triMem[tri_base_addr + i];
+			//}
+
+			//for(int i = 0; i< maxNumVert*VERTMEMLENGTH; i++)
+			//{
+			//	s_vertMem[i] = d_vertMem[vert_base_addr+i];
+
+			//}
+
+			__syncthreads();
+	}
+}
+
+__global__ static void run_check_neighbor(float* d_triMem,int* d_vertMem,int* d_BlockSizes, int* d_con,int* d_ActiveList, int numOldActive ,int maxNumTotalFaces, int maxNumVert,int nTotalActive, int m_StopDistance)
+{
+
+	uint list_idx = blockIdx.y*gridDim.x + blockIdx.x;
+
+
+	if(list_idx < nTotalActive - numOldActive)
+	{
+		// retrieve actual block index from the active list
+		uint block_idx = d_ActiveList[list_idx + numOldActive];
+		int block_size = d_BlockSizes[block_idx];
+
+		double speedI = 1;
+		//bool isValid;
+
+		////////////////////////////////////////initialize shared memory//////////////////////////////////////////
+
+
+		//if(list_idx >= numOldActive) // copy value
+		//{
+		//	
+		//} 
+		//else
+		//{
+			//uint blocksize = BLOCK_LENGTH*BLOCK_LENGTH*BLOCK_LENGTH;
+			uint tri_base_addr = block_idx*maxNumTotalFaces*TRIMEMLENGTH;
+			uint vert_base_addr = block_idx*maxNumVert*VERTMEMLENGTH;
+
+			uint tx = threadIdx.x;
+
+			float* s_triMem  = (float*)s_run_check_neghbor_array;
+			int*   s_vertMem = (int*)&s_triMem[maxNumTotalFaces*TRIMEMLENGTH];
+			//__shared__ float s_triMem[927];
+		    //__shared__ int   s_vertMem[608];
+			//__shared__ float s_triMem[1557];
+			//__shared__ int   s_vertMem[1088];
+
+			//__shared__ float s_triMem[1620];
+			//__shared__ int   s_vertMem[1088];
+
+
+			for(int i = 0; i< TRIMEMLENGTH; i++)
+			{
+				s_triMem[tx*TRIMEMLENGTH + i] = d_triMem[tri_base_addr + tx * TRIMEMLENGTH + i];
+			}
+
+			if(tx < maxNumVert)
+				for(int i = 0; i< VERTMEMLENGTH; i++)
+				{
+					s_vertMem[tx*VERTMEMLENGTH + i] = d_vertMem[vert_base_addr+tx*VERTMEMLENGTH + i] - tri_base_addr;
+
+				}
+
+
+			//float* s_triMem  = (float*)s_run_check_neghbor_array;
+			//int*   s_vertMem = (int*)&s_triMem[maxNumTotalFaces*TRIMEMLENGTH];
+
+
+			//for(int i = 0; i< maxNumTotalFaces*TRIMEMLENGTH; i++)
+			//{
+			//	s_triMem[i] = d_triMem[tri_base_addr + i];
+			//}
+
+			//for(int i = 0; i< maxNumVert*VERTMEMLENGTH; i++)
+			//{
+			//	s_vertMem[i] = d_vertMem[vert_base_addr+i];
+
+			//}
+
+			__syncthreads();
+
+
+			/////////////////////////////////////////done shared memory copy//////////////////////////////////////////////////
+
+
+			float a,b,c, delta, cosA, lamda1, lamda2, TC1, TC2;
+			float TAB, TA, TB, TC;
+			int A, B, C;
+			float squareAB;
+			float LenAB, LenBC, LenAC, LenCD, LenAD, EdgeTA, EdgeTB;
+			float tmpOldTC;
+
+			float oldT = LARGENUM;
+			float newT = LARGENUM;
+			//
+			// compute new value
+			//
+
+
+
+
+			for(int i = 0; i< 3; i++)
+			{
+				A = (i+1)%3;
+				B = (i+2)%3;
+				C =  i;
+
+				TA = s_triMem[tx*TRIMEMLENGTH + 3 + A]; 
+				TB = s_triMem[tx*TRIMEMLENGTH + 3 + B]; 
+				TC = s_triMem[tx*TRIMEMLENGTH + 3 + C]; 
+
+				if(TA >= LARGENUM && TB >= LARGENUM && TC >= LARGENUM)  //if all values are large,break
+					break;
+
+				
+				if(s_triMem[tx*TRIMEMLENGTH + 6 + i] == -1 )  //if this tri is virtual and this is not the main vertex, continue
+					continue;
+
+				
+
+				
+
+				TC1 = LARGENUM;
+				TC2 = LARGENUM;
+
+				
+
+
+				TAB = TB - TA;
+
+				LenAB = s_triMem[tx*TRIMEMLENGTH + A];     // the index should be tx*TRIMEMLENGTH + (i+1)%3
+				LenBC = s_triMem[tx*TRIMEMLENGTH + B];     // the index should be tx*TRIMEMLENGTH + (i+2)%3
+				LenAC = s_triMem[tx*TRIMEMLENGTH + C];     // the index should be tx*TRIMEMLENGTH + i
+
+
+				a = (speedI*speedI*LenAB*LenAB - TAB * TAB)*LenAB*LenAB;
+
+				EdgeTA = TA + LenAC * speedI;
+				EdgeTB = TB + LenBC * speedI;
+
+				
+
+				if (a > 0)
+				{
+
+					cosA = (LenAC * LenAC + LenAB * LenAB - LenBC * LenBC) / (2 * LenAC * LenAB);
+
+					b = 2 * LenAB * LenAC * cosA * (speedI*speedI*LenAB*LenAB - TAB * TAB);
+					delta = 4 * LenAC * LenAC  * a *  TAB * TAB * (1 - cosA * cosA);
+
+					lamda1 = (-b + sqrt(delta))/(2*a);
+					lamda2 = (-b - sqrt(delta))/(2*a);
+
+					if (lamda1>=0&&lamda1<=1)
+					{
+						LenAD = lamda1*LenAB;
+
+						LenCD = sqrt(LenAC*LenAC+LenAD*LenAD-2*LenAC*LenAD*cosA);
+
+						TC1 = lamda1*TAB+TA+LenCD*speedI;
+
+					}
+					if(lamda2>=0&&lamda2<=1)
+					{
+						LenAD = lamda1*LenAB;
+
+						LenCD = sqrt(LenAC*LenAC+LenAD*LenAD-2*LenAC*LenAD*cosA);
+
+						TC2 = lamda1*TAB+TA+LenCD*speedI;
+
+					}
+
+					
+					TC = MIN(TC, MIN(TC2, MIN(TC1,MIN(EdgeTA,EdgeTB))) );
+
+				}
+
+				else
+				{
+					TC = MIN(TC, MIN(EdgeTA,EdgeTB) );
+
+				}
+
+				s_triMem[tx*TRIMEMLENGTH + 6 + C] = TC; 
+
+				
+
+
+
+			}
+
+			__syncthreads();
+
+///////////////////////////////////////////////////////////////////////////////////////////////////
+
+			//TC = LARGENUM;
+			//int tmpcon = 1;
+			//
+			//if(tx < block_size)    //block_size is the vertices in this block and it is about warp size so there is no severe divergence
+			//{
+			//	float residue;
+			//	
+			//	int tmp2;
+			//	for(int j = 0; j < VERTMEMLENGTH ; j++)                        // find the min and keep the old T for convergence check
+			//	{
+			//		tmp2 = s_vertMem[tx * VERTMEMLENGTH + j];
+			//		if( tmp2 >= 0  && tmp2 < maxNumTotalFaces*TRIMEMLENGTH)
+			//			if(s_triMem[tmp2+3] != -1)
+			//			{
+			//				TC = MIN(TC,s_triMem[tmp2+3]);
+			//				oldT = s_triMem[tmp2];
+			//				residue = oldT - TC;
+			//				tmpcon = tmpcon && (residue < EPS);
+
+
+			//			}
+			//	}
+
+			//	newT = TC;
+			//	int meiyongde = 0;
+			//		
+			//	for(int j =0; j < VERTMEMLENGTH; j++) // update all the old to the min
+			//	{    
+			//		tmp2 = s_vertMem[tx * VERTMEMLENGTH + j];
+			//		if( tmp2 >= 0  && tmp2 < maxNumTotalFaces*TRIMEMLENGTH)
+			//			s_triMem[tmp2] = TC;
+			//	}
+			//}
+			//		
+			//		
+
+			//	
+
+			//__syncthreads(); 		
+
+
+
+
+
+			//if(tx < block_size)
+			//{			
+			//	//float residue = oldT - newT;
+			//	int tmpindex;
+			//	d_con[block_idx*maxNumVert + tx] = tmpcon;
+
+			//	for(int j = 0; j < VERTMEMLENGTH; j++) // update gloal memory  all the old to the min
+			//	{  
+			//		tmpindex = s_vertMem[tx * VERTMEMLENGTH + j];
+			//		if( tmpindex != -1)
+			//			d_triMem[tmpindex + tri_base_addr] = newT;
+			//	}
+
+			//}
+			//else if(tx < maxNumVert)
+			//{
+			//	d_con[block_idx*maxNumVert + tx] = 1;   //assign the rest 1 so that in reduction, these values can be & with the effective values
+			//	int meiyongde = 0;
+			//}
+	
+
+	}
+
+}
+
+__global__ static void reconcile(float* d_triMem,int* d_vertMem,int* d_BlockSizes, int* d_con,int* d_ActiveList, int numOldActive ,int maxNumTotalFaces, int maxNumVert,int nTotalActive, int m_StopDistance)
+{
+
+	uint list_idx = blockIdx.y*gridDim.x + blockIdx.x;
+
+
+	if(list_idx < nTotalActive - numOldActive)
+	{
+		// retrieve actual block index from the active list
+		uint block_idx = d_ActiveList[list_idx + numOldActive];
+		int block_size = d_BlockSizes[block_idx];
+
+		uint tri_base_addr = block_idx*maxNumTotalFaces*TRIMEMLENGTH;
+		uint vert_base_addr = block_idx*maxNumVert*VERTMEMLENGTH;
+
+		uint tx = threadIdx.x;
+
+		float* s_triMem  = (float*)s_run_check_neghbor_array;
+		int*   s_vertMem = (int*)&s_triMem[maxNumTotalFaces*TRIMEMLENGTH];
+
+		for(int i = 0; i< TRIMEMLENGTH; i++)
+			{
+				s_triMem[tx*TRIMEMLENGTH + i] = d_triMem[tri_base_addr + tx * TRIMEMLENGTH + i];
+			}
+
+			if(tx < maxNumVert)
+				for(int i = 0; i< VERTMEMLENGTH; i++)
+				{
+					s_vertMem[tx*VERTMEMLENGTH + i] = d_vertMem[vert_base_addr+tx*VERTMEMLENGTH + i] - tri_base_addr;
+
+				}
+
+			__syncthreads();
+
+
+
+
+
+
+
+			float	TC = LARGENUM;
+			int tmpcon = 1;
+			float oldT, newT;
+			
+			if(tx < block_size)    //block_size is the vertices in this block and it is about warp size so there is no severe divergence
+			{
+				float residue;
+				
+				int tmp2;
+				for(int j = 0; j < VERTMEMLENGTH ; j++)                        // find the min and keep the old T for convergence check
+				{
+					tmp2 = s_vertMem[tx * VERTMEMLENGTH + j];
+					if( tmp2 >= 0  && tmp2 < maxNumTotalFaces*TRIMEMLENGTH)
+						if(s_triMem[tmp2+3] != -1)
+						{
+							TC = MIN(TC,s_triMem[tmp2+3]);
+							oldT = s_triMem[tmp2];
+							residue = oldT - TC;
+							tmpcon = tmpcon && (residue < EPS);
+
+
+						}
+				}
+
+				newT = TC;
+				int meiyongde = 0;
+					
+				for(int j =0; j < VERTMEMLENGTH; j++) // update all the old to the min
+				{    
+					tmp2 = s_vertMem[tx * VERTMEMLENGTH + j];
+					if( tmp2 >= 0  && tmp2 < maxNumTotalFaces*TRIMEMLENGTH)
+						s_triMem[tmp2] = TC;
+				}
+			}
+					
+					
+
+				
+
+			__syncthreads(); 		
+
+
+
+
+
+			//if(tx < block_size)
+			//{			
+			//	//float residue = oldT - newT;
+			//	int tmpindex;
+			//	d_con[block_idx*maxNumVert + tx] = tmpcon;
+
+			//	for(int j = 0; j < VERTMEMLENGTH; j++) // update gloal memory  all the old to the min
+			//	{  
+			//		tmpindex = s_vertMem[tx * VERTMEMLENGTH + j];
+			//		if( tmpindex != -1)
+			//			d_triMem[tmpindex + tri_base_addr] = newT;
+			//	}
+
+			//}
+			//else if(tx < maxNumVert)
+			//{
+			//	d_con[block_idx*maxNumVert + tx] = 1;   //assign the rest 1 so that in reduction, these values can be & with the effective values
+			//	int meiyongde = 0;
+			//}
+
+
+
+	}
+
+
+}
+
+
+__global__ static void updateglobal(float* d_triMem,int* d_vertMem,int* d_BlockSizes, int* d_con,int* d_ActiveList, int numOldActive ,int maxNumTotalFaces, int maxNumVert,int nTotalActive, int m_StopDistance)
+{
+
+	uint list_idx = blockIdx.y*gridDim.x + blockIdx.x;
+
+
+	if(list_idx < nTotalActive - numOldActive)
+	{
+		// retrieve actual block index from the active list
+		uint block_idx = d_ActiveList[list_idx + numOldActive];
+		int block_size = d_BlockSizes[block_idx];
+
+		uint tri_base_addr = block_idx*maxNumTotalFaces*TRIMEMLENGTH;
+		uint vert_base_addr = block_idx*maxNumVert*VERTMEMLENGTH;
+
+		uint tx = threadIdx.x;
+
+		float* s_triMem  = (float*)s_run_check_neghbor_array;
+		int*   s_vertMem = (int*)&s_triMem[maxNumTotalFaces*TRIMEMLENGTH];
+
+		for(int i = 0; i< TRIMEMLENGTH; i++)
+			{
+				s_triMem[tx*TRIMEMLENGTH + i] = d_triMem[tri_base_addr + tx * TRIMEMLENGTH + i];
+			}
+
+			if(tx < maxNumVert)
+				for(int i = 0; i< VERTMEMLENGTH; i++)
+				{
+					s_vertMem[tx*VERTMEMLENGTH + i] = d_vertMem[vert_base_addr+tx*VERTMEMLENGTH + i] - tri_base_addr;
+
+				}
+
+			__syncthreads();
+
+
+
+
+
+
+
+			float	TC = LARGENUM;
+			int tmpcon = 1;
+			float oldT, newT;
+			
+			//if(tx < block_size)    //block_size is the vertices in this block and it is about warp size so there is no severe divergence
+			//{
+			//	float residue;
+			//	
+			//	int tmp2;
+			//	for(int j = 0; j < VERTMEMLENGTH ; j++)                        // find the min and keep the old T for convergence check
+			//	{
+			//		tmp2 = s_vertMem[tx * VERTMEMLENGTH + j];
+			//		if( tmp2 >= 0  && tmp2 < maxNumTotalFaces*TRIMEMLENGTH)
+			//			if(s_triMem[tmp2+3] != -1)
+			//			{
+			//				TC = MIN(TC,s_triMem[tmp2+3]);
+			//				oldT = s_triMem[tmp2];
+			//				residue = oldT - TC;
+			//				tmpcon = tmpcon && (residue < EPS);
+
+
+			//			}
+			//	}
+
+			//	newT = TC;
+			//	int meiyongde = 0;
+			//		
+			//	for(int j =0; j < VERTMEMLENGTH; j++) // update all the old to the min
+			//	{    
+			//		tmp2 = s_vertMem[tx * VERTMEMLENGTH + j];
+			//		if( tmp2 >= 0  && tmp2 < maxNumTotalFaces*TRIMEMLENGTH)
+			//			s_triMem[tmp2] = TC;
+			//	}
+			//}
+			//		
+			//		
+
+			//	
+
+			//__syncthreads(); 		
+
+
+
+
+
+			if(tx < block_size)
+			{			
+				//float residue = oldT - newT;
+				int tmpindex;
+				d_con[block_idx*maxNumVert + tx] = tmpcon;
+
+				for(int j = 0; j < VERTMEMLENGTH; j++) // update gloal memory  all the old to the min
+				{  
+					tmpindex = s_vertMem[tx * VERTMEMLENGTH + j];
+					if( tmpindex != -1)
+						d_triMem[tmpindex + tri_base_addr] = newT;
+				}
+
+			}
+			else if(tx < maxNumVert)
+			{
+				d_con[block_idx*maxNumVert + tx] = 1;   //assign the rest 1 so that in reduction, these values can be & with the effective values
+				int meiyongde = 0;
+			}
+
+
+
+	}
+
+
+}
+
+__global__ static void emptycall(float* d_triMem,int* d_vertMem,int* d_BlockSizes, int* d_con,int* d_ActiveList, int numOldActive ,int maxNumTotalFaces, int maxNumVert,int nTotalActive, int m_StopDistance)
+{}
+
+
+
+
+
+void meshFIM::GenerateData(int numBlock)
+{
+
+	int numVert = m_meshPtr->vertices.size();
+	int numFaces=m_meshPtr->faces.size();
+
+	
+
+	
+
+	if(!InitCUDA()) {
+		exit(1);
+	}
+
+	float       *d_Vertices = 0;
+	float	    *d_vertT  = 0;
+	d_Face      *d_Faces = 0;
+	index       *d_ActiveList= 0;
+	//int         *d_VertLabel = 0;
+	int         *d_BlockLabel = 0;
+	int         *d_Neighbors;
+	d_Face      *d_NonObtuseNeighborFaces;
+	int        *d_con;
+	int        *d_blockCon;
+	int         *d_blockSizes;
+	float       *d_triMem;
+	int         *d_vertMem;
+
+	int         *d_BlockSizes;
+
+
+
+	float       *h_Vertices = 0;
+	float	    *h_vertT  = 0;
+	d_Face      *h_Faces = 0;
+	index       *h_ActiveList= 0;    //list of active blocks
+	//int         *h_VertLabel = 0;    //vertices active or not
+	int         *h_BlockLabel = 0;   //block active or not
+	int         *h_Neighbors;
+	d_Face      *h_NonObtuseNeighborFaces;
+	float       *h_triMem;
+	int         *h_vertMem;
+	int         *h_blockCon;
+
+	int         *h_BlockSizes;
+
+
+
+	
+
+
+	
+
+
+	/////////////////////////////malloc cpu memories///////////////////////////
+
+	//h_Vertices = (float*)malloc(sizeof(float) * numVert * DIMENSION);
+	//h_vertT = (float*)malloc(sizeof(float) * numVert);
+	//h_Faces = (d_Face*)malloc(sizeof(d_Face) * numFaces);
+	//h_ActiveSet = (index*) malloc(sizeof(index) * numBlock);
+	//h_VertLabel = (int*) malloc(sizeof(int) * m_maxNumVert * numBlock);
+	h_BlockLabel = (int*) malloc(sizeof(int) * numBlock);
+	h_Neighbors = (int*) malloc(sizeof(int) * numVert * MAXNUMNEIGHBOR);
+	//h_NonObtuseNeighborFaces = (d_Face*)malloc(sizeof(d_Face) * numVert * MAXNUMNEIGHBOR);
+
+	h_triMem = (float*)malloc(sizeof(float) * TRIMEMLENGTH * m_maxNumTotalFaces * numBlock);
+	h_vertMem = (int*)malloc(sizeof(int) * VERTMEMLENGTH * m_maxNumVert * numBlock);
+	h_BlockSizes = (int*)malloc(sizeof(int) * numBlock);
+
+	h_blockCon = (int*)malloc(sizeof(int) * numBlock);
+
+
+	
+
+	/////////////////////////malloc gpu memories//////////////////////////////
+	//CUDA_SAFE_CALL( cudaMalloc((void**) &d_Vertices, sizeof(float) * numVert * DIMENSION));
+	//CUDA_SAFE_CALL( cudaMalloc((void**) &d_vertT, sizeof(float) * numBlock));
+	//CUDA_SAFE_CALL( cudaMalloc((void**) &d_VertLabel, sizeof(int) * m_maxNumVert * numBlock));
+	//CUDA_SAFE_CALL( cudaMalloc((void**) &d_BlockLabel, sizeof(int) * numBlock));
+
+	//CUDA_SAFE_CALL( cudaMalloc((void**) &d_ActiveSet, sizeof(index) * numBlock));
+	//CUDA_SAFE_CALL( cudaMalloc((void**) &d_Faces, sizeof(d_Face) * numFaces));
+	//CUDA_SAFE_CALL( cudaMalloc((void**) &d_Neighbors, sizeof(int) * numVert * MAXNUMNEIGHBOR));
+	//CUDA_SAFE_CALL( cudaMalloc((void**) &d_NonObtuseNeighborFaces,  sizeof(d_Face) * numVert * MAXNUMNEIGHBOR));
+	CUDA_SAFE_CALL( cudaMalloc((void**) &d_con, sizeof(int) * numBlock * m_maxNumVert));
+	CUDA_SAFE_CALL( cudaMalloc((void**) &d_blockCon,  sizeof(int) * numBlock));
+
+	CUDA_SAFE_CALL( cudaMalloc((void**) &d_triMem,  sizeof(float) * TRIMEMLENGTH * m_maxNumTotalFaces * numBlock));
+	CUDA_SAFE_CALL( cudaMalloc((void**) &d_vertMem, sizeof(int) * VERTMEMLENGTH * m_maxNumVert * numBlock));
+
+	CUDA_SAFE_CALL( cudaMalloc((void**) &d_BlockSizes, sizeof(int) * numBlock));
+
+
+
+
+
+
+
+
+
+
+	/////////////////initialize cpu memories//////////////////////////////
+	
+
+
+	vector< vector<int> > blockVertMapping;
+	blockVertMapping.resize(numVert);     //for each vertex, store the addresses where it appears in the global triMem array.
+
+   for( int i = 0; i <  numBlock; i++)
+   {
+
+	   h_blockCon[i] = 1;
+
+	   h_BlockLabel[i] = m_BlockLabel[i];
+	   h_BlockSizes[i] = m_BlockSizes[i];
+	   int blockIdx = i * m_maxNumTotalFaces * TRIMEMLENGTH;
+	   int vertIdx =  i * VERTMEMLENGTH * m_maxNumVert;
+	   
+	   int tmpVert[3];
+
+	   int numPF = m_PartitionFaces[i].size();
+	   int numPNF = m_PartitionNbFaces[i].size();
+	   int numPVF = m_PartitionVirtualFaces[i].size();
+
+	   int k = 0;
+	   int l = 0;
+
+	   for(int j = 0; j< m_maxNumTotalFaces; j++)
+	   {
+		   
+		   if(j < numPF)
+		   {
+			  // printf("%d %f\n",m_PartitionFaces[i][j], m_meshPtr->faces[m_PartitionFaces[i][j]].edgeLens[0]);
+			   h_triMem[blockIdx + j*TRIMEMLENGTH + 0] = m_meshPtr->faces[m_PartitionFaces[i][j]].edgeLens[0];
+			   h_triMem[blockIdx + j*TRIMEMLENGTH + 1] = m_meshPtr->faces[m_PartitionFaces[i][j]].edgeLens[1];
+			   h_triMem[blockIdx + j*TRIMEMLENGTH + 2] = m_meshPtr->faces[m_PartitionFaces[i][j]].edgeLens[2];
+			   h_triMem[blockIdx + j*TRIMEMLENGTH + 3] = LARGENUM;
+			   h_triMem[blockIdx + j*TRIMEMLENGTH + 4] = LARGENUM; 
+			   h_triMem[blockIdx + j*TRIMEMLENGTH + 5] = LARGENUM; 
+			   h_triMem[blockIdx + j*TRIMEMLENGTH + 6] = LARGENUM; 
+			   h_triMem[blockIdx + j*TRIMEMLENGTH + 7] = LARGENUM; 
+			   h_triMem[blockIdx + j*TRIMEMLENGTH + 8] = LARGENUM; 
+
+
+			   blockVertMapping[m_meshPtr->faces[m_PartitionFaces[i][j]][0]].push_back(blockIdx + j*TRIMEMLENGTH + 3);
+			   blockVertMapping[m_meshPtr->faces[m_PartitionFaces[i][j]][1]].push_back(blockIdx + j*TRIMEMLENGTH + 4);
+			   blockVertMapping[m_meshPtr->faces[m_PartitionFaces[i][j]][2]].push_back(blockIdx + j*TRIMEMLENGTH + 5);
+		   }
+		   
+		 
+		   else if( j < numPF + numPNF)
+		   {
+			   h_triMem[blockIdx + j*TRIMEMLENGTH + 0] = m_meshPtr->faces[m_PartitionNbFaces[i][k]].edgeLens[0];
+			   h_triMem[blockIdx + j*TRIMEMLENGTH + 1] = m_meshPtr->faces[m_PartitionNbFaces[i][k]].edgeLens[1];
+			   h_triMem[blockIdx + j*TRIMEMLENGTH + 2] = m_meshPtr->faces[m_PartitionNbFaces[i][k]].edgeLens[2];
+			   h_triMem[blockIdx + j*TRIMEMLENGTH + 3] = LARGENUM;
+			   h_triMem[blockIdx + j*TRIMEMLENGTH + 4] = LARGENUM; 
+			   h_triMem[blockIdx + j*TRIMEMLENGTH + 5] = LARGENUM; 
+			   h_triMem[blockIdx + j*TRIMEMLENGTH + 6] = LARGENUM; 
+			   h_triMem[blockIdx + j*TRIMEMLENGTH + 7] = LARGENUM; 
+			   h_triMem[blockIdx + j*TRIMEMLENGTH + 8] = LARGENUM;
+
+			   blockVertMapping[m_meshPtr->faces[m_PartitionNbFaces[i][k]][0]].push_back(blockIdx + j*TRIMEMLENGTH + 3);
+			   blockVertMapping[m_meshPtr->faces[m_PartitionNbFaces[i][k]][1]].push_back(blockIdx + j*TRIMEMLENGTH + 4);
+			   blockVertMapping[m_meshPtr->faces[m_PartitionNbFaces[i][k]][2]].push_back(blockIdx + j*TRIMEMLENGTH + 5);
+			   
+
+
+			   k++;
+			   
+		   }
+
+		   
+		   else if (j < numPF + numPNF + numPVF)
+		   {
+			   h_triMem[blockIdx + j*TRIMEMLENGTH + 0] = m_PartitionVirtualFaces[i][l].edgeLens[0];
+			   h_triMem[blockIdx + j*TRIMEMLENGTH + 1] = m_PartitionVirtualFaces[i][l].edgeLens[1];
+			   h_triMem[blockIdx + j*TRIMEMLENGTH + 2] = m_PartitionVirtualFaces[i][l].edgeLens[2];
+			   h_triMem[blockIdx + j*TRIMEMLENGTH + 3] = LARGENUM;
+			   h_triMem[blockIdx + j*TRIMEMLENGTH + 4] = LARGENUM; 
+			   h_triMem[blockIdx + j*TRIMEMLENGTH + 5] = LARGENUM; 
+			   h_triMem[blockIdx + j*TRIMEMLENGTH + 6] = LARGENUM; 
+			   h_triMem[blockIdx + j*TRIMEMLENGTH + 7] = -1; 
+			   h_triMem[blockIdx + j*TRIMEMLENGTH + 8] = -1;
+
+
+			   
+			   blockVertMapping[m_PartitionVirtualFaces[i][l][0]].push_back(blockIdx + j*TRIMEMLENGTH + 3);
+			   blockVertMapping[m_PartitionVirtualFaces[i][l][1]].push_back(blockIdx + j*TRIMEMLENGTH + 4);
+			   blockVertMapping[m_PartitionVirtualFaces[i][l][2]].push_back(blockIdx + j*TRIMEMLENGTH + 5);
+
+			   l++;
+
+
+		   }
+		   else
+		   {
+			   h_triMem[blockIdx + j*TRIMEMLENGTH + 0] = -1;
+			   h_triMem[blockIdx + j*TRIMEMLENGTH + 1] = -1;
+			   h_triMem[blockIdx + j*TRIMEMLENGTH + 2] = -1;
+			   h_triMem[blockIdx + j*TRIMEMLENGTH + 3] = -1;
+			   h_triMem[blockIdx + j*TRIMEMLENGTH + 4] = -1;
+			   h_triMem[blockIdx + j*TRIMEMLENGTH + 5] = -1;
+			   h_triMem[blockIdx + j*TRIMEMLENGTH + 6] = -1;
+			   h_triMem[blockIdx + j*TRIMEMLENGTH + 7] = -1;
+			   h_triMem[blockIdx + j*TRIMEMLENGTH + 8] = -1;
+
+		   }
+	   }
+
+
+	   
+	   
+
+   }
+
+
+   m_maxNumVertMapping = 0;
+   for(int i =0; i < numVert; i++)
+   {
+	   m_maxNumVertMapping = MAX(m_maxNumVertMapping, blockVertMapping[i].size());
+   }
+
+   for(int i = 0; i< numBlock; i++)
+   {
+	   int vertIdx =  i * VERTMEMLENGTH * m_maxNumVert;
+	   for(int m  = 0; m < m_PartitionVerts[i].size(); m++)
+	   {
+
+		   int tmpsize = blockVertMapping[m_PartitionVerts[i][m]].size();
+		   int n = 0;
+		   for(; n < tmpsize; n++)
+			   h_vertMem[vertIdx + m*VERTMEMLENGTH + n] = blockVertMapping[m_PartitionVerts[i][m]][n];
+		   for(;n<VERTMEMLENGTH; n++)
+			   h_vertMem[vertIdx + m*VERTMEMLENGTH + n] = -1;
+	   }
+
+	   for(int m = m_PartitionVerts[i].size() * VERTMEMLENGTH; m < m_maxNumVert * VERTMEMLENGTH; m++)
+	   {
+		   h_vertMem[vertIdx + m] = -1;
+	   }
+   }
+
+
+
+   
+
+
+/////////////copy triMem and verMem to a vector just for debugging/////////////////
+   vector<float> vec_triMem;
+   vector<int>   vec_vertMem;
+
+   vec_triMem.resize(TRIMEMLENGTH * m_maxNumTotalFaces * numBlock);
+   vec_vertMem.resize(VERTMEMLENGTH * m_maxNumVert * numBlock);
+   for(int i =0; i < TRIMEMLENGTH * m_maxNumTotalFaces * numBlock; i++)
+	   vec_triMem[i] = h_triMem[i];
+
+   for(int i = 0; i< VERTMEMLENGTH * m_maxNumVert * numBlock; i++)
+	   vec_vertMem[i] = h_vertMem[i];
+
+   ////////////////////////////////////////////////////////////////////////////
+
+ //  int numActive =m_ActiveBlocks.size(); 
+	//int iterNum = 0;
+
+	h_ActiveList = (int*)malloc(sizeof(int)*numBlock);
+	CUDA_SAFE_CALL( cudaMalloc((void**) &d_ActiveList, sizeof(int) * numBlock));
+
+	//set<int>::iterator activeiter = m_ActiveBlocks.begin();
+	//for(int i =0; activeiter !=  m_ActiveBlocks.end(); activeiter++)
+	//	h_ActiveList[i++] = *activeiter;
+
+	
+
+
+	
+
+
+	
+	
+
+
+
+
+
+
+	//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+	
+	
+	float oldT1 , newT1, oldT2, newT2;
+	index tmpIndex1, tmpIndex2;
+	vector<int>  nb; 
+//	int i;
+//	int SMsize;
+	int GridSize;
+
+	int nIter = 10;
+	int numActive;
+
+	//for(int currentVert = 0; currentVert < 1/*numVert*/; currentVert++)
+	//{
+
+		for( int i = 0; i <  numBlock; i++)
+		{
+
+			h_blockCon[i] = 1;
+
+			h_BlockLabel[i] = m_BlockLabel[i];
+			h_BlockSizes[i] = m_BlockSizes[i];
+		}
+
+//////////////////////////////////initialize the seed points for h_triMem////////////////////////////////////
+
+		for(int i = 0; i< m_SeedPoints.size(); i++)
+		{
+			int seed = m_SeedPoints[i];
+			int seedBelongToBlock = m_PartitionLabel[seed];
+			h_blockCon[seedBelongToBlock] = 0;
+			// int blockIdx = seedBelongToBlock * m_maxNumTotalFaces * TRIMEMLENGTH;
+			for(int j = 0; j < blockVertMapping[seed].size(); j++)
+			{
+				h_triMem[blockVertMapping[seed][j]] = 0.0;
+
+			}
+
+
+		}
+
+		CUDA_SAFE_CALL( cudaMemcpy( d_triMem,h_triMem, sizeof(float) * m_maxNumTotalFaces * numBlock * TRIMEMLENGTH, cudaMemcpyHostToDevice));
+
+		numActive =m_ActiveBlocks.size(); 
+
+
+		set<int>::iterator activeiter = m_ActiveBlocks.begin();
+		for(int i =0; activeiter !=  m_ActiveBlocks.end(); activeiter++)
+			h_ActiveList[i++] = *activeiter;
+
+		//////////////////copy to gpu memories///////////////////////////////
+
+      CUDA_SAFE_CALL( cudaMemcpy( d_triMem,h_triMem, sizeof(float) * m_maxNumTotalFaces * numBlock * TRIMEMLENGTH, cudaMemcpyHostToDevice));
+	  CUDA_SAFE_CALL( cudaMemcpy( d_vertMem,h_vertMem, sizeof(int) * m_maxNumVert * numBlock * VERTMEMLENGTH, cudaMemcpyHostToDevice));
+	  CUDA_SAFE_CALL( cudaMemcpy( d_BlockSizes,h_BlockSizes, sizeof(int) * numBlock, cudaMemcpyHostToDevice));
+	  CUDA_SAFE_CALL( cudaMemcpy( d_blockCon,h_blockCon, sizeof(int) * numBlock, cudaMemcpyHostToDevice));
+
+
+	  int nTotalIter = 0;
+
+	  unsigned int timer = 0;
+	  unsigned int timerTotal = 0;
+	CUT_SAFE_CALL( cutCreateTimer( &timerTotal));
+	CUT_SAFE_CALL( cutStartTimer( timerTotal));
+
+	//clock_t starttime, endtime;
+	//starttime = clock ();
+
+	 
+
+
+		while ( numActive > 0)
+		{
+			
+
+			///////////////////////////step 1: run solver //////////////////////////////////////////////////////////////////
+
+			nTotalIter++;
+			//printf("number of active block: %d\n", numActive);
+
+			dim3 dimGrid(numActive, 1);
+			dim3 dimBlock(m_maxNumTotalFaces, 1);
+
+
+
+			 timer = 0;
+			CUT_SAFE_CALL( cutCreateTimer( &timer));
+
+			CUT_SAFE_CALL( cutStartTimer( timer));
+
+			CUDA_SAFE_CALL( cudaMemcpy( d_ActiveList,h_ActiveList,sizeof(int) * numBlock, cudaMemcpyHostToDevice));
+
+			FIMCuda<<<dimGrid, dimBlock, m_maxNumTotalFaces*TRIMEMLENGTH*sizeof(float)+m_maxNumVert*VERTMEMLENGTH*sizeof(int)>>>( d_triMem,d_vertMem,d_BlockSizes, d_con,d_ActiveList, numActive,m_maxNumTotalFaces, m_maxNumVert, nIter, m_StopDistance);
+
+			CUT_CHECK_ERROR("Kernel execution failed");
+			CUDA_SAFE_CALL( cudaThreadSynchronize() );
+
+			CUT_SAFE_CALL( cutStopTimer( timer));
+			printf("FIMCuda Processing time: %f (ms)\n", cutGetTimerValue( timer));
+
+
+
+			//////////////////////step 2: reduction////////////////////////////////////////////////
+
+
+			timer = 0;
+			CUT_SAFE_CALL( cutCreateTimer( &timer));
+
+			CUT_SAFE_CALL( cutStartTimer( timer));
+
+			dimBlock = dim3(m_maxNumVert / 2 , 1);
+			run_reduction<<<dimGrid, dimBlock, sizeof(int)*m_maxNumVert>>>(d_con, d_blockCon,d_ActiveList, numActive, d_BlockSizes);
+			CUT_CHECK_ERROR("Kernel execution failed");
+
+			CUDA_SAFE_CALL( cudaThreadSynchronize() );
+			CUT_SAFE_CALL( cutStopTimer( timer));
+			printf("run reduction Processing time: %f (ms)\n", cutGetTimerValue( timer));
+
+
+
+
+			//////////////////////////////////////////////////////////////////
+			// 3. check neighbor tiles of converged tile 
+			// Add any active block of neighbor of converged block is inserted
+			// to the list
+
+			//CUDA_SAFE_CALL( cudaThreadSynchronize() );
+			timer = 0;
+			CUT_SAFE_CALL( cutCreateTimer( &timer));
+
+			CUT_SAFE_CALL( cutStartTimer( timer));
+
+
+			CUDA_SAFE_CALL( cudaMemcpy(h_blockCon, d_blockCon, numBlock*sizeof(int), cudaMemcpyDeviceToHost) );
+
+			CUDA_SAFE_CALL( cudaThreadSynchronize() );
+			CUT_SAFE_CALL( cutStopTimer( timer));
+			printf("compute neighbor copy Processing time: %f (ms)\n", cutGetTimerValue( timer));
+
+			int nOldActiveBlock = numActive;
+
+			timer = 0;
+			CUT_SAFE_CALL( cutCreateTimer( &timer));
+
+			CUT_SAFE_CALL( cutStartTimer( timer));
+
+			for(uint i=0; i<nOldActiveBlock; i++)
+			{
+				// check neighbors of current active tile
+				uint currBlkIdx = h_ActiveList[i];
+
+				if(h_blockCon[currBlkIdx]) // not active : converged
+				{
+					//h_BlockLabel[currBlkIdx] == FARP;
+					set<int> nb = m_BlockNeighbor[currBlkIdx];
+
+					set<int>::iterator iter;
+					for( iter = nb.begin(); iter != nb.end() ; iter++)
+					{
+						int currIdx = *iter;
+
+						if(h_BlockLabel[currIdx] == FARP) 
+						{
+							h_BlockLabel[currIdx] = ACTIVE;
+							h_ActiveList[numActive++] = currIdx;
+							//m_ActiveBlocks.insert(m_ActiveBlocks.end(), currIdx);
+						}
+					}
+				}
+				else
+					h_ActiveList[numActive++] = currBlkIdx;   // if active block is not convergent, add it to active list and computer again next iter. a bug here: if the acitve block happen to be convengent at next iteration, there will be no active block after check_neighbor.
+
+			}
+
+
+			CUDA_SAFE_CALL( cudaThreadSynchronize() );
+			CUT_SAFE_CALL( cutStopTimer( timer));
+			printf("compute neighbor Processing time: %f (ms)\n", cutGetTimerValue( timer));
+
+
+			//////////////////////////////////////////////////////////////////
+			// 4. run solver only once for neighbor blocks of converged block
+			// current active list contains active blocks and neighbor blocks of
+			// any converged blocks
+			//
+
+
+			dimGrid = dim3(numActive - nOldActiveBlock, 1);
+			dimBlock = dim3(m_maxNumTotalFaces, 1);
+			CUDA_SAFE_CALL( cudaMemcpy(d_ActiveList, h_ActiveList, numActive*sizeof(int), cudaMemcpyHostToDevice) );
+			timer = 0;
+			CUT_SAFE_CALL( cutCreateTimer( &timer));
+
+			CUT_SAFE_CALL( cutStartTimer( timer));
+
+
+			copyshared<<< dimGrid, dimBlock, m_maxNumTotalFaces*TRIMEMLENGTH*sizeof(float)+m_maxNumVert*VERTMEMLENGTH*sizeof(int)>>>(d_triMem,d_vertMem,d_BlockSizes, d_con,d_ActiveList, nOldActiveBlock ,m_maxNumTotalFaces, m_maxNumVert,numActive, m_StopDistance);
+
+			CUDA_SAFE_CALL( cudaThreadSynchronize() );
+			CUT_SAFE_CALL( cutStopTimer( timer));
+			printf("copyshared Processing time: %f (ms)\n", cutGetTimerValue( timer));
+
+			timer = 0;
+			CUT_SAFE_CALL( cutCreateTimer( &timer));
+
+			CUT_SAFE_CALL( cutStartTimer( timer));
+
+			
+
+			
+			run_check_neighbor<<< dimGrid, dimBlock, m_maxNumTotalFaces*TRIMEMLENGTH*sizeof(float)+m_maxNumVert*VERTMEMLENGTH*sizeof(int)>>>(d_triMem,d_vertMem,d_BlockSizes, d_con,d_ActiveList, nOldActiveBlock ,m_maxNumTotalFaces, m_maxNumVert,numActive, m_StopDistance);
+			CUT_CHECK_ERROR("Kernel execution failed");
+
+
+			CUDA_SAFE_CALL( cudaThreadSynchronize() );
+			CUT_SAFE_CALL( cutStopTimer( timer));
+			printf("check neighbor Processing time: %f (ms)\n", cutGetTimerValue( timer));
+
+			timer = 0;
+			CUT_SAFE_CALL( cutCreateTimer( &timer));
+
+			CUT_SAFE_CALL( cutStartTimer( timer));
+
+			
+
+			reconcile<<< dimGrid, dimBlock, m_maxNumTotalFaces*TRIMEMLENGTH*sizeof(float)+m_maxNumVert*VERTMEMLENGTH*sizeof(int)>>>(d_triMem,d_vertMem,d_BlockSizes, d_con,d_ActiveList, nOldActiveBlock ,m_maxNumTotalFaces, m_maxNumVert,numActive, m_StopDistance);
+			CUT_CHECK_ERROR("Kernel execution failed");
+
+
+			CUDA_SAFE_CALL( cudaThreadSynchronize() );
+			CUT_SAFE_CALL( cutStopTimer( timer));
+			printf("reconcile Processing time: %f (ms)\n", cutGetTimerValue( timer));
+
+			timer = 0;
+			CUT_SAFE_CALL( cutCreateTimer( &timer));
+
+			CUT_SAFE_CALL( cutStartTimer( timer));
+
+			
+
+			updateglobal<<< dimGrid, dimBlock, m_maxNumTotalFaces*TRIMEMLENGTH*sizeof(float)+m_maxNumVert*VERTMEMLENGTH*sizeof(int)>>>(d_triMem,d_vertMem,d_BlockSizes, d_con,d_ActiveList, nOldActiveBlock ,m_maxNumTotalFaces, m_maxNumVert,numActive, m_StopDistance);
+			CUT_CHECK_ERROR("Kernel execution failed");
+
+
+			CUDA_SAFE_CALL( cudaThreadSynchronize() );
+			CUT_SAFE_CALL( cutStopTimer( timer));
+			printf("updateglobal Processing time: %f (ms)\n", cutGetTimerValue( timer));
+
+			timer = 0;
+			CUT_SAFE_CALL( cutCreateTimer( &timer));
+
+			CUT_SAFE_CALL( cutStartTimer( timer));
+
+			
+
+			emptycall<<< dimGrid, dimBlock, m_maxNumTotalFaces*TRIMEMLENGTH*sizeof(float)+m_maxNumVert*VERTMEMLENGTH*sizeof(int)>>>(d_triMem,d_vertMem,d_BlockSizes, d_con,d_ActiveList, nOldActiveBlock ,m_maxNumTotalFaces, m_maxNumVert,numActive, m_StopDistance);
+			CUT_CHECK_ERROR("Kernel execution failed");
+
+
+			CUDA_SAFE_CALL( cudaThreadSynchronize() );
+			CUT_SAFE_CALL( cutStopTimer( timer));
+			printf("emptycall Processing time: %f (ms)\n", cutGetTimerValue( timer));
+
+
+
+
+			//////////////////////////////////////////////////////////////////
+			// 5. reduction 
+
+
+			timer = 0;
+			CUT_SAFE_CALL( cutCreateTimer( &timer));
+
+			CUT_SAFE_CALL( cutStartTimer( timer));
+
+			dimGrid = dim3(numActive, 1);
+			dimBlock = dim3(m_maxNumVert / 2 , 1);
+			run_reduction<<<dimGrid, dimBlock, sizeof(int)*m_maxNumVert>>>(d_con, d_blockCon,d_ActiveList,numActive, d_BlockSizes);
+			CUT_CHECK_ERROR("Kernel execution failed");
+
+
+			CUDA_SAFE_CALL( cudaThreadSynchronize() );
+			CUT_SAFE_CALL( cutStopTimer( timer));
+			printf("reduction2 Processing time: %f (ms)\n", cutGetTimerValue( timer));
+
+
+
+			//////////////////////////////////////////////////////////////////
+			// 6. update active list
+			// read back active volume from the device and add 
+			// active block to active list on the host memory
+
+
+			timer = 0;
+			CUT_SAFE_CALL( cutCreateTimer( &timer));
+
+			CUT_SAFE_CALL( cutStartTimer( timer));
+
+
+			numActive = 0;
+			//m_ActiveBlocks.clear();
+
+			CUDA_SAFE_CALL( cudaMemcpy(h_blockCon, d_blockCon, numBlock*sizeof(int), cudaMemcpyDeviceToHost) );
+			for(uint i=0; i<numBlock; i++)
+			{
+				if(!h_blockCon[i]) // false : activate block (not converged)
+				{
+					h_BlockLabel[i] = ACTIVE;
+					h_ActiveList[numActive++] = i;	
+					//m_ActiveBlocks.insert(m_ActiveBlocks.end(), i);
+					//printf("Block %d added\n", i);
+				}
+				else h_BlockLabel[i] = FARP;
+			}
+
+			CUDA_SAFE_CALL( cudaThreadSynchronize() );
+			CUT_SAFE_CALL( cutStopTimer( timer));
+			printf("Compute active Processing time: %f (ms)\n", cutGetTimerValue( timer));
+
+
+		}
+	//}
+
+
+
+		timer = 0;
+			CUT_SAFE_CALL( cutCreateTimer( &timer));
+
+			CUT_SAFE_CALL( cutStartTimer( timer));
+	CUDA_SAFE_CALL( cudaMemcpy(h_triMem, d_triMem,sizeof(float) * m_maxNumTotalFaces * numBlock * TRIMEMLENGTH , cudaMemcpyDeviceToHost) );
+
+	CUDA_SAFE_CALL( cudaThreadSynchronize() );
+			CUT_SAFE_CALL( cutStopTimer( timer));
+			printf("copy trimem to host Processing time: %f (ms)\n", cutGetTimerValue( timer));
+
+
+
+
+	
+
+	
+	CUT_CHECK_ERROR("Kernel execution failed\n");
+
+	CUDA_SAFE_CALL( cudaThreadSynchronize() );
+
+	//endtime = clock();
+	//double duration = (double)(endtime - starttime) *1000 / CLOCKS_PER_SEC;
+
+	//printf("Computing time : %.10lf ms\n",duration);
+
+
+
+	CUT_SAFE_CALL( cutStopTimer( timerTotal));
+	printf("Total Processing time: %f (ms)\n", cutGetTimerValue( timerTotal));
+	CUT_SAFE_CALL( cutDeleteTimer( timerTotal));
+	CUT_SAFE_CALL( cutDeleteTimer( timer));
+
+	printf("The iteration number: %d\n", nTotalIter );
+
+	vec_triMem.resize(m_maxNumTotalFaces * numBlock * 3);
+	float maxVertT = 0;
+	for(int i = 0 ; i <  m_maxNumTotalFaces * numBlock; i++)
+	{
+
+		
+		vec_triMem[3*i + 0] =  h_triMem[i*TRIMEMLENGTH + 3];
+		vec_triMem[3*i + 1] =  h_triMem[i*TRIMEMLENGTH + 4];
+		vec_triMem[3*i + 2] =  h_triMem[i*TRIMEMLENGTH + 5];
+
+		if(h_triMem[i*TRIMEMLENGTH + 3] >= LARGENUM)
+			vec_triMem[3*i + 0] = -2;
+		if(h_triMem[i*TRIMEMLENGTH + 4] >= LARGENUM)
+			vec_triMem[3*i + 1] = -2;
+		if(h_triMem[i*TRIMEMLENGTH + 5] >= LARGENUM)
+			vec_triMem[3*i + 2] = -2;
+
+
+		maxVertT = MAX(maxVertT,MAX(vec_triMem[3*i + 2] , MAX(vec_triMem[3*i + 1] , vec_triMem[3*i + 0])));
+	}
+
+	//
+	//printf("%s\n", h_vertT);
+
+	//CUDA_SAFE_CALL( cudaFree(d_Vertices));
+
+	//CUDA_SAFE_CALL( cudaFree(d_vertT));
+	//CUDA_SAFE_CALL( cudaFree(d_Faces));
+	//CUDA_SAFE_CALL( cudaFree(d_VertLabel));
+	CUDA_SAFE_CALL( cudaFree(d_ActiveList));
+	CUDA_SAFE_CALL( cudaFree(d_triMem));
+	CUDA_SAFE_CALL( cudaFree(d_vertMem));
+
+	CUDA_SAFE_CALL( cudaFree(d_con));
+
+    CUDA_SAFE_CALL( cudaFree(d_blockCon));
+
+	//CUDA_SAFE_CALL( cudaFree(d_Neighbors));
+
+	//free(h_Vertices); 
+	//free(h_vertT);
+	//free(h_Faces);
+	free(h_ActiveList);
+	//free(h_VertLabel);
+	free(h_triMem);
+	free(h_vertMem);
+	free(h_Neighbors);
+	free(h_BlockLabel);
+	free(h_blockCon);
+	free(h_BlockSizes);
+
+
+	
+
+
+}

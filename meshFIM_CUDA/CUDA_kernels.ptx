@@ -1,0 +1,2394 @@
+	.version 1.4
+	.target sm_13
+	// compiled with C:\CUDA\bin64/../open64/lib//be.exe
+	// nvopencc 2.3 built on 2009-08-03
+
+	//-----------------------------------------------------------
+	// Compiling CUDA_kernels.cpp3.i (C:/Users/ZHISON~1/AppData/Local/Temp/ccBI#.a05556)
+	//-----------------------------------------------------------
+
+	//-----------------------------------------------------------
+	// Options:
+	//-----------------------------------------------------------
+	//  Target:ptx, ISA:sm_13, Endian:little, Pointer Size:32
+	//  -O3	(Optimization level)
+	//  -g0	(Debug level)
+	//  -m2	(Report advisories)
+	//-----------------------------------------------------------
+
+	.file	1	"CUDA_kernels.cudafe2.gpu"
+	.file	2	"c:\Program Files (x86)\Microsoft Visual Studio 9.0\VC\INCLUDE\crtdefs.h"
+	.file	3	"C:\CUDA\bin64/../include\crt/device_runtime.h"
+	.file	4	"C:\CUDA\bin64/../include\host_defines.h"
+	.file	5	"C:\CUDA\bin64/../include\builtin_types.h"
+	.file	6	"c:\cuda\include\device_types.h"
+	.file	7	"c:\cuda\include\driver_types.h"
+	.file	8	"c:\cuda\include\texture_types.h"
+	.file	9	"c:\cuda\include\vector_types.h"
+	.file	10	"c:\cuda\include\host_defines.h"
+	.file	11	"C:\CUDA\bin64/../include\device_launch_parameters.h"
+	.file	12	"c:\cuda\include\crt\storage_class.h"
+	.file	13	"c:\Program Files (x86)\Microsoft Visual Studio 9.0\VC\INCLUDE\time.h"
+	.file	14	"d:\lab2\fim\meshfim_cuda_partition_color_square_modifiedb_modifieddatastucture_globalco\meshfim_cuda\CUDADefines.h"
+	.file	15	"d:/Lab2/FIM/meshFIM_CUDA_partition_color_square_ModifiedB_modifiedDatastucture_globalCo/meshFIM_CUDA//CUDA_kernels.cu"
+	.file	16	"C:\CUDA\bin64/../include\common_functions.h"
+	.file	17	"c:\cuda\include\crt/func_macro.h"
+	.file	18	"c:\cuda\include\math_functions.h"
+	.file	19	"c:\cuda\include\device_functions.h"
+	.file	20	"c:\cuda\include\math_constants.h"
+	.file	21	"c:\cuda\include\sm_11_atomic_functions.h"
+	.file	22	"c:\cuda\include\sm_12_atomic_functions.h"
+	.file	23	"c:\cuda\include\sm_13_double_functions.h"
+	.file	24	"c:\cuda\include\texture_fetch_functions.h"
+	.file	25	"c:\cuda\include\math_functions_dbl_ptx3.h"
+
+	.extern	.shared .align 1 .b8 s_array[];
+	.extern	.shared .align 4 .b8 s_run_check_neghbor_array[];
+
+	.entry _Z13run_reductionPiS_S_iS_ (
+		.param .u32 __cudaparm__Z13run_reductionPiS_S_iS__con,
+		.param .u32 __cudaparm__Z13run_reductionPiS_S_iS__blockCon,
+		.param .u32 __cudaparm__Z13run_reductionPiS_S_iS__ActiveList,
+		.param .s32 __cudaparm__Z13run_reductionPiS_S_iS__nActiveBlock,
+		.param .u32 __cudaparm__Z13run_reductionPiS_S_iS__blockSizes)
+	{
+	.reg .u16 %rh<4>;
+	.reg .u32 %r<49>;
+	.reg .pred %p<7>;
+	.shared .align 4 .b8 __cuda_s_conv20[256];
+	.loc	15	8	0
+$LBB1__Z13run_reductionPiS_S_iS_:
+	mov.u16 	%rh1, %nctaid.x;
+	mov.u16 	%rh2, %ctaid.y;
+	mul.wide.u16 	%r1, %rh1, %rh2;
+	cvt.u32.u16 	%r2, %ctaid.x;
+	add.u32 	%r3, %r2, %r1;
+	ld.param.s32 	%r4, [__cudaparm__Z13run_reductionPiS_S_iS__nActiveBlock];
+	setp.le.s32 	%p1, %r4, %r3;
+	@%p1 bra 	$Lt_0_4354;
+	.loc	15	15	0
+	mov.u32 	%r5, __cuda_s_conv20;
+	ld.param.u32 	%r6, [__cudaparm__Z13run_reductionPiS_S_iS__ActiveList];
+	mul.lo.u32 	%r7, %r3, 4;
+	add.u32 	%r8, %r6, %r7;
+	ld.global.s32 	%r9, [%r8+0];
+	.loc	15	26	0
+	cvt.u32.u16 	%r10, %ntid.x;
+	mul.lo.u32 	%r11, %r9, %r10;
+	cvt.u32.u16 	%r12, %tid.x;
+	mul24.lo.u32 	%r13, %r12, 4;
+	mul.lo.u32 	%r14, %r11, 2;
+	add.u32 	%r15, %r13, %r5;
+	add.u32 	%r16, %r14, %r12;
+	ld.param.u32 	%r17, [__cudaparm__Z13run_reductionPiS_S_iS__con];
+	mul.lo.u32 	%r18, %r16, 4;
+	add.u32 	%r19, %r17, %r18;
+	ld.global.s32 	%r20, [%r19+0];
+	st.shared.s32 	[%r15+0], %r20;
+	.loc	15	27	0
+	add.u32 	%r21, %r16, %r10;
+	mul.lo.u32 	%r22, %r21, 4;
+	add.u32 	%r23, %r17, %r22;
+	ld.global.s32 	%r24, [%r23+0];
+	add.u32 	%r25, %r12, %r10;
+	mul.lo.u32 	%r26, %r25, 4;
+	add.u32 	%r27, %r5, %r26;
+	st.shared.s32 	[%r27+0], %r24;
+	.loc	15	29	0
+	bar.sync 	0;
+	.loc	15	31	0
+	mov.s32 	%r28, %r10;
+	mov.u32 	%r29, 0;
+	setp.eq.u32 	%p2, %r10, %r29;
+	@%p2 bra 	$Lt_0_4866;
+$Lt_0_5378:
+ //<loop> Loop body line 31
+	setp.le.u32 	%p3, %r28, %r12;
+	@%p3 bra 	$Lt_0_5634;
+ //<loop> Part of loop body line 31, head labeled $Lt_0_5378
+	.loc	15	38	0
+	ld.shared.s32 	%r30, [%r15+0];
+	mov.s32 	%r31, 0;
+	set.ne.u32.s32 	%r32, %r30, %r31;
+	neg.s32 	%r33, %r32;
+	add.u32 	%r34, %r28, %r12;
+	mul.lo.u32 	%r35, %r34, 4;
+	add.u32 	%r36, %r5, %r35;
+	ld.shared.s32 	%r37, [%r36+0];
+	mov.s32 	%r38, 0;
+	set.ne.u32.s32 	%r39, %r37, %r38;
+	neg.s32 	%r40, %r39;
+	and.b32 	%r41, %r33, %r40;
+	st.shared.s32 	[%r15+0], %r41;
+$Lt_0_5634:
+ //<loop> Part of loop body line 31, head labeled $Lt_0_5378
+	.loc	15	40	0
+	bar.sync 	0;
+	.loc	15	31	0
+	shr.u32 	%r28, %r28, 1;
+	mov.u32 	%r42, 0;
+	setp.ne.u32 	%p4, %r28, %r42;
+	@%p4 bra 	$Lt_0_5378;
+$Lt_0_4866:
+	mov.u32 	%r43, 0;
+	setp.ne.u32 	%p5, %r12, %r43;
+	@%p5 bra 	$Lt_0_6402;
+	.loc	15	45	0
+	ld.shared.s32 	%r44, [__cuda_s_conv20+0];
+	ld.param.u32 	%r45, [__cudaparm__Z13run_reductionPiS_S_iS__blockCon];
+	mul.lo.u32 	%r46, %r9, 4;
+	add.u32 	%r47, %r45, %r46;
+	st.global.s32 	[%r47+0], %r44;
+$Lt_0_6402:
+$Lt_0_4354:
+	.loc	15	48	0
+	exit;
+$LDWend__Z13run_reductionPiS_S_iS_:
+	} // _Z13run_reductionPiS_S_iS_
+
+	.entry _Z7FIMCudaPfS_PiS0_S_S_S_S_S0_S0_S0_iiif (
+		.param .u32 __cudaparm__Z7FIMCudaPfS_PiS0_S_S_S_S_S0_S0_S0_iiif_d_triMem,
+		.param .u32 __cudaparm__Z7FIMCudaPfS_PiS0_S_S_S_S_S0_S0_S0_iiif_d_triMemOut,
+		.param .u32 __cudaparm__Z7FIMCudaPfS_PiS0_S_S_S_S_S0_S0_S0_iiif_d_vertMem,
+		.param .u32 __cudaparm__Z7FIMCudaPfS_PiS0_S_S_S_S_S0_S0_S0_iiif_d_vertMemOutside,
+		.param .u32 __cudaparm__Z7FIMCudaPfS_PiS0_S_S_S_S_S0_S0_S0_iiif_d_edgeMem0,
+		.param .u32 __cudaparm__Z7FIMCudaPfS_PiS0_S_S_S_S_S0_S0_S0_iiif_d_edgeMem1,
+		.param .u32 __cudaparm__Z7FIMCudaPfS_PiS0_S_S_S_S_S0_S0_S0_iiif_d_edgeMem2,
+		.param .u32 __cudaparm__Z7FIMCudaPfS_PiS0_S_S_S_S_S0_S0_S0_iiif_d_speed,
+		.param .u32 __cudaparm__Z7FIMCudaPfS_PiS0_S_S_S_S_S0_S0_S0_iiif_d_BlockSizes,
+		.param .u32 __cudaparm__Z7FIMCudaPfS_PiS0_S_S_S_S_S0_S0_S0_iiif_d_con,
+		.param .u32 __cudaparm__Z7FIMCudaPfS_PiS0_S_S_S_S_S0_S0_S0_iiif_ActiveList,
+		.param .s32 __cudaparm__Z7FIMCudaPfS_PiS0_S_S_S_S_S0_S0_S0_iiif_nActiveBlock,
+		.param .s32 __cudaparm__Z7FIMCudaPfS_PiS0_S_S_S_S_S0_S0_S0_iiif_maxNumTotalFaces,
+		.param .s32 __cudaparm__Z7FIMCudaPfS_PiS0_S_S_S_S_S0_S0_S0_iiif_maxNumVert,
+		.param .f32 __cudaparm__Z7FIMCudaPfS_PiS0_S_S_S_S_S0_S0_S0_iiif_m_StopDistance)
+	{
+	.reg .u16 %rh<5>;
+	.reg .u32 %r<214>;
+	.reg .f32 %f<212>;
+	.reg .f64 %fd<8>;
+	.reg .pred %p<114>;
+	.loc	15	54	0
+$LBB1__Z7FIMCudaPfS_PiS0_S_S_S_S_S0_S0_S0_iiif:
+	mov.u32 	%r1, s_array;
+	.loc	15	63	0
+	ld.param.u32 	%r2, [__cudaparm__Z7FIMCudaPfS_PiS0_S_S_S_S_S0_S0_S0_iiif_ActiveList];
+	cvt.u32.u16 	%r3, %ctaid.x;
+	mov.u16 	%rh1, %nctaid.x;
+	mov.u16 	%rh2, %ctaid.y;
+	mul.wide.u16 	%r4, %rh1, %rh2;
+	add.u32 	%r5, %r3, %r4;
+	mul.lo.u32 	%r6, %r5, 4;
+	add.u32 	%r7, %r2, %r6;
+	ld.global.u32 	%r8, [%r7+0];
+	.loc	15	64	0
+	ld.param.u32 	%r9, [__cudaparm__Z7FIMCudaPfS_PiS0_S_S_S_S_S0_S0_S0_iiif_d_BlockSizes];
+	mul.lo.u32 	%r10, %r8, 4;
+	add.u32 	%r11, %r9, %r10;
+	ld.global.s32 	%r12, [%r11+0];
+	.loc	15	85	0
+	ld.param.u32 	%r13, [__cudaparm__Z7FIMCudaPfS_PiS0_S_S_S_S_S0_S0_S0_iiif_maxNumTotalFaces];
+	mul.lo.u32 	%r14, %r8, %r13;
+	cvt.u32.u16 	%r15, %tid.x;
+	mul24.lo.u32 	%r16, %r15, 12;
+	add.u32 	%r17, %r14, %r15;
+	add.u32 	%r18, %r16, %r1;
+	mul.lo.u32 	%r19, %r17, 12;
+	ld.param.u32 	%r20, [__cudaparm__Z7FIMCudaPfS_PiS0_S_S_S_S_S0_S0_S0_iiif_d_triMem];
+	add.u32 	%r21, %r20, %r19;
+	ld.global.f32 	%f1, [%r21+0];
+	st.shared.f32 	[%r18+0], %f1;
+	ld.global.f32 	%f2, [%r21+4];
+	st.shared.f32 	[%r18+4], %f2;
+	ld.global.f32 	%f3, [%r21+8];
+	st.shared.f32 	[%r18+8], %f3;
+	mul.lo.u32 	%r22, %r13, 12;
+	add.u32 	%r23, %r22, %r1;
+	ld.param.u32 	%r24, [__cudaparm__Z7FIMCudaPfS_PiS0_S_S_S_S_S0_S0_S0_iiif_maxNumVert];
+	setp.le.u32 	%p1, %r24, %r15;
+	@%p1 bra 	$Lt_1_62466;
+	.loc	15	92	0
+	mul.lo.u32 	%r25, %r8, %r24;
+	mul.lo.u32 	%r26, %r14, 3;
+	add.u32 	%r27, %r25, %r15;
+	add.u32 	%r28, %r16, %r23;
+	mul.lo.u32 	%r29, %r27, 24;
+	ld.param.u32 	%r30, [__cudaparm__Z7FIMCudaPfS_PiS0_S_S_S_S_S0_S0_S0_iiif_d_vertMem];
+	add.u32 	%r31, %r30, %r29;
+	ld.global.u16 	%r32, [%r31+0];
+	sub.u32 	%r33, %r32, %r26;
+	st.shared.s16 	[%r28+0], %r33;
+	ld.global.u16 	%r34, [%r31+4];
+	sub.u32 	%r35, %r34, %r26;
+	st.shared.s16 	[%r28+2], %r35;
+	ld.global.u16 	%r36, [%r31+8];
+	sub.u32 	%r37, %r36, %r26;
+	st.shared.s16 	[%r28+4], %r37;
+	ld.global.u16 	%r38, [%r31+12];
+	sub.u32 	%r39, %r38, %r26;
+	st.shared.s16 	[%r28+6], %r39;
+	ld.global.u16 	%r40, [%r31+16];
+	sub.u32 	%r41, %r40, %r26;
+	st.shared.s16 	[%r28+8], %r41;
+	ld.global.u16 	%r42, [%r31+20];
+	sub.u32 	%r43, %r42, %r26;
+	st.shared.s16 	[%r28+10], %r43;
+$Lt_1_62466:
+	.loc	15	96	0
+	bar.sync 	0;
+	.loc	15	121	0
+	mul.lo.u32 	%r44, %r17, 4;
+	ld.param.u32 	%r45, [__cudaparm__Z7FIMCudaPfS_PiS0_S_S_S_S_S0_S0_S0_iiif_d_speed];
+	add.u32 	%r46, %r45, %r44;
+	ld.global.f32 	%f4, [%r46+0];
+	.loc	15	122	0
+	ld.param.u32 	%r47, [__cudaparm__Z7FIMCudaPfS_PiS0_S_S_S_S_S0_S0_S0_iiif_d_edgeMem0];
+	add.u32 	%r48, %r47, %r44;
+	ld.global.f32 	%f5, [%r48+0];
+	.loc	15	123	0
+	ld.param.u32 	%r49, [__cudaparm__Z7FIMCudaPfS_PiS0_S_S_S_S_S0_S0_S0_iiif_d_edgeMem1];
+	add.u32 	%r50, %r49, %r44;
+	ld.global.f32 	%f6, [%r50+0];
+	.loc	15	124	0
+	ld.param.u32 	%r51, [__cudaparm__Z7FIMCudaPfS_PiS0_S_S_S_S_S0_S0_S0_iiif_d_edgeMem2];
+	add.u32 	%r52, %r51, %r44;
+	ld.global.f32 	%f7, [%r52+0];
+	.loc	15	24	0
+	setp.gt.u32 	%p2, %r12, %r15;
+	mov.s32 	%r53, 0;
+$Lt_1_63490:
+ //<loop> Loop body line 24, nesting depth: 1, iterations: 6
+	@!%p2 bra 	$Lt_1_63746;
+ //<loop> Part of loop body line 24, head labeled $Lt_1_63490
+	.loc	15	136	0
+	add.u32 	%r54, %r16, %r23;
+	ld.shared.s16 	%rh3, [%r54+0];
+	mul.wide.u16 	%r55, %rh3, 4;
+	add.u32 	%r56, %r1, %r55;
+	ld.shared.f32 	%f8, [%r56+0];
+	mov.f32 	%f9, %f8;
+$Lt_1_63746:
+ //<loop> Part of loop body line 24, head labeled $Lt_1_63490
+	.loc	15	139	0
+	bar.sync 	0;
+	.loc	15	141	0
+	ld.shared.f32 	%f10, [%r18+0];
+	.loc	15	142	0
+	ld.shared.f32 	%f11, [%r18+4];
+	.loc	15	143	0
+	ld.shared.f32 	%f12, [%r18+8];
+	.loc	15	139	0
+	cvt.f64.f32 	%fd1, %f10;
+	mov.f64 	%fd2, 0d416312d000000000;	// 1e+007
+	setp.ge.f64 	%p3, %fd1, %fd2;
+	@!%p3 bra 	$Lt_1_95746;
+ //<loop> Part of loop body line 24, head labeled $Lt_1_63490
+	.loc	15	142	0
+	ld.shared.f32 	%f11, [%r18+4];
+	.loc	15	139	0
+	cvt.f64.f32 	%fd3, %f11;
+	mov.f64 	%fd4, 0d416312d000000000;	// 1e+007
+	setp.ge.f64 	%p4, %fd3, %fd4;
+	@!%p4 bra 	$Lt_1_95746;
+ //<loop> Part of loop body line 24, head labeled $Lt_1_63490
+	.loc	15	143	0
+	ld.shared.f32 	%f12, [%r18+8];
+	.loc	15	139	0
+	cvt.f64.f32 	%fd5, %f12;
+	mov.f64 	%fd6, 0d416312d000000000;	// 1e+007
+	setp.ge.f64 	%p5, %fd5, %fd6;
+	@%p5 bra 	$L_1_61698;
+$Lt_1_95746:
+$L_1_61954:
+ //<loop> Part of loop body line 24, head labeled $Lt_1_63490
+	sub.f32 	%f13, %f12, %f11;
+	mul.f32 	%f14, %f4, %f4;
+	mad.f32 	%f15, %f4, %f5, %f11;
+	mad.f32 	%f16, %f4, %f7, %f12;
+	mul.f32 	%f17, %f13, %f13;
+	mul.f32 	%f18, %f14, %f6;
+	setp.lt.f32 	%p6, %f15, %f16;
+	mul.f32 	%f19, %f6, %f18;
+	sub.f32 	%f20, %f19, %f17;
+	mul.f32 	%f21, %f20, %f6;
+	mul.f32 	%f22, %f21, %f6;
+	mov.f32 	%f23, 0f00000000;    	// 0
+	setp.gt.f32 	%p7, %f22, %f23;
+	@!%p7 bra 	$Lt_1_64514;
+ //<loop> Part of loop body line 24, head labeled $Lt_1_63490
+	.loc	19	4505	0
+	add.f32 	%f24, %f5, %f5;
+	add.f32 	%f25, %f6, %f6;
+	mul.f32 	%f26, %f6, %f6;
+	mov.f32 	%f27, 0f40800000;    	// 4
+	mul.f32 	%f28, %f5, %f27;
+	mul.f32 	%f29, %f24, %f6;
+	mul.f32 	%f30, %f25, %f5;
+	mad.f32 	%f31, %f5, %f5, %f26;
+	mul.f32 	%f32, %f28, %f5;
+	mul.f32 	%f33, %f18, %f6;
+	mul.f32 	%f34, %f7, %f7;
+	sub.f32 	%f35, %f31, %f34;
+	mul.f32 	%f36, %f13, %f13;
+	sub.f32 	%f37, %f36, %f33;
+	div.full.f32 	%f38, %f35, %f29;
+	mov.f32 	%f39, 0f3f800000;    	// 1
+	mul.f32 	%f40, %f38, %f38;
+	sub.f32 	%f41, %f39, %f40;
+	mul.f32 	%f42, %f30, %f38;
+	mul.f32 	%f43, %f32, %f22;
+	add.f32 	%f44, %f22, %f22;
+	mul.f32 	%f45, %f37, %f42;
+	mul.f32 	%f46, %f13, %f43;
+	mul.f32 	%f47, %f13, %f46;
+	mul.f32 	%f48, %f41, %f47;
+	sqrt.approx.f32 	%f49, %f48;
+	sub.f32 	%f50, %f49, %f45;
+	div.full.f32 	%f51, %f50, %f44;
+	.loc	15	192	0
+	add.f32 	%f52, %f45, %f49;
+	neg.f32 	%f53, %f52;
+	mov.f32 	%f54, 0f00000000;    	// 0
+	set.ge.u32.f32 	%r57, %f51, %f54;
+	neg.s32 	%r58, %r57;
+	mov.f32 	%f55, 0f3f800000;    	// 1
+	set.le.u32.f32 	%r59, %f51, %f55;
+	neg.s32 	%r60, %r59;
+	and.b32 	%r61, %r58, %r60;
+	mov.u32 	%r62, 0;
+	setp.eq.s32 	%p8, %r61, %r62;
+	@%p8 bra 	$Lt_1_65026;
+ //<loop> Part of loop body line 24, head labeled $Lt_1_63490
+	.loc	15	200	0
+	mul.f32 	%f56, %f51, %f6;
+	mad.f32 	%f57, %f51, %f13, %f11;
+	mul.f32 	%f58, %f5, %f5;
+	mad.f32 	%f59, %f56, %f56, %f58;
+	mul.f32 	%f60, %f56, %f24;
+	mul.f32 	%f61, %f38, %f60;
+	sub.f32 	%f62, %f59, %f61;
+	sqrt.approx.f32 	%f63, %f62;
+	mad.f32 	%f64, %f4, %f63, %f57;
+	bra.uni 	$Lt_1_64770;
+$Lt_1_65026:
+ //<loop> Part of loop body line 24, head labeled $Lt_1_63490
+	mov.f32 	%f64, 0f4b189680;    	// 1e+007
+$Lt_1_64770:
+ //<loop> Part of loop body line 24, head labeled $Lt_1_63490
+	div.full.f32 	%f65, %f53, %f44;
+	mov.f32 	%f66, 0f00000000;    	// 0
+	set.ge.u32.f32 	%r63, %f65, %f66;
+	neg.s32 	%r64, %r63;
+	mov.f32 	%f67, 0f3f800000;    	// 1
+	set.le.u32.f32 	%r65, %f65, %f67;
+	neg.s32 	%r66, %r65;
+	and.b32 	%r67, %r64, %r66;
+	mov.u32 	%r68, 0;
+	setp.eq.s32 	%p9, %r67, %r68;
+	@%p9 bra 	$Lt_1_65538;
+ //<loop> Part of loop body line 24, head labeled $Lt_1_63490
+	.loc	15	209	0
+	mul.f32 	%f68, %f65, %f6;
+	mad.f32 	%f69, %f13, %f65, %f11;
+	mul.f32 	%f70, %f5, %f5;
+	mad.f32 	%f71, %f68, %f68, %f70;
+	mul.f32 	%f72, %f68, %f24;
+	mul.f32 	%f73, %f38, %f72;
+	sub.f32 	%f74, %f71, %f73;
+	sqrt.approx.f32 	%f75, %f74;
+	mad.f32 	%f76, %f4, %f75, %f69;
+	bra.uni 	$Lt_1_65282;
+$Lt_1_65538:
+ //<loop> Part of loop body line 24, head labeled $Lt_1_63490
+	mov.f32 	%f76, 0f4b189680;    	// 1e+007
+$Lt_1_65282:
+ //<loop> Part of loop body line 24, head labeled $Lt_1_63490
+	@!%p6 bra 	$Lt_1_66050;
+ //<loop> Part of loop body line 24, head labeled $Lt_1_63490
+	.loc	15	214	0
+	setp.gt.f32 	%p10, %f15, %f64;
+	selp.s32 	%r69, 0, 1, %p10;
+	bra.uni 	$Lt_1_65794;
+$Lt_1_66050:
+ //<loop> Part of loop body line 24, head labeled $Lt_1_63490
+	setp.gt.f32 	%p11, %f16, %f64;
+	selp.s32 	%r69, 0, 1, %p11;
+$Lt_1_65794:
+ //<loop> Part of loop body line 24, head labeled $Lt_1_63490
+	mov.u32 	%r70, 0;
+	setp.eq.s32 	%p12, %r69, %r70;
+	@%p12 bra 	$Lt_1_66562;
+ //<loop> Part of loop body line 24, head labeled $Lt_1_63490
+	@!%p6 bra 	$Lt_1_67074;
+ //<loop> Part of loop body line 24, head labeled $Lt_1_63490
+	setp.gt.f32 	%p13, %f15, %f76;
+	selp.s32 	%r71, 0, 1, %p13;
+	bra.uni 	$Lt_1_66818;
+$Lt_1_67074:
+ //<loop> Part of loop body line 24, head labeled $Lt_1_63490
+	setp.gt.f32 	%p14, %f16, %f76;
+	selp.s32 	%r71, 0, 1, %p14;
+$Lt_1_66818:
+ //<loop> Part of loop body line 24, head labeled $Lt_1_63490
+	mov.s32 	%r72, %r71;
+	bra.uni 	$Lt_1_66306;
+$Lt_1_66562:
+ //<loop> Part of loop body line 24, head labeled $Lt_1_63490
+	setp.lt.f32 	%p15, %f76, %f64;
+	selp.s32 	%r72, 0, 1, %p15;
+$Lt_1_66306:
+ //<loop> Part of loop body line 24, head labeled $Lt_1_63490
+	mov.u32 	%r73, 0;
+	setp.eq.s32 	%p16, %r72, %r73;
+	@%p16 bra 	$Lt_1_67586;
+ //<loop> Part of loop body line 24, head labeled $Lt_1_63490
+	@!%p6 bra 	$Lt_1_68098;
+ //<loop> Part of loop body line 24, head labeled $Lt_1_63490
+	setp.gt.f32 	%p17, %f15, %f64;
+	selp.s32 	%r74, 0, 1, %p17;
+	bra.uni 	$Lt_1_67842;
+$Lt_1_68098:
+ //<loop> Part of loop body line 24, head labeled $Lt_1_63490
+	setp.gt.f32 	%p18, %f16, %f64;
+	selp.s32 	%r74, 0, 1, %p18;
+$Lt_1_67842:
+ //<loop> Part of loop body line 24, head labeled $Lt_1_63490
+	mov.u32 	%r75, 0;
+	setp.eq.s32 	%p19, %r74, %r75;
+	@%p19 bra 	$Lt_1_68610;
+ //<loop> Part of loop body line 24, head labeled $Lt_1_63490
+	@!%p6 bra 	$Lt_1_69122;
+ //<loop> Part of loop body line 24, head labeled $Lt_1_63490
+	setp.gt.f32 	%p20, %f15, %f10;
+	selp.s32 	%r76, 0, 1, %p20;
+	bra.uni 	$Lt_1_68866;
+$Lt_1_69122:
+ //<loop> Part of loop body line 24, head labeled $Lt_1_63490
+	setp.gt.f32 	%p21, %f16, %f10;
+	selp.s32 	%r76, 0, 1, %p21;
+$Lt_1_68866:
+ //<loop> Part of loop body line 24, head labeled $Lt_1_63490
+	mov.s32 	%r77, %r76;
+	bra.uni 	$Lt_1_68354;
+$Lt_1_68610:
+ //<loop> Part of loop body line 24, head labeled $Lt_1_63490
+	setp.lt.f32 	%p22, %f10, %f64;
+	selp.s32 	%r77, 0, 1, %p22;
+$Lt_1_68354:
+ //<loop> Part of loop body line 24, head labeled $Lt_1_63490
+	mov.s32 	%r78, %r77;
+	bra.uni 	$Lt_1_67330;
+$Lt_1_67586:
+ //<loop> Part of loop body line 24, head labeled $Lt_1_63490
+	setp.lt.f32 	%p23, %f10, %f76;
+	selp.s32 	%r78, 0, 1, %p23;
+$Lt_1_67330:
+ //<loop> Part of loop body line 24, head labeled $Lt_1_63490
+	mov.u32 	%r79, 0;
+	setp.eq.s32 	%p24, %r78, %r79;
+	@%p24 bra 	$Lt_1_69634;
+ //<loop> Part of loop body line 24, head labeled $Lt_1_63490
+	@!%p6 bra 	$Lt_1_70146;
+ //<loop> Part of loop body line 24, head labeled $Lt_1_63490
+	setp.gt.f32 	%p25, %f15, %f64;
+	selp.s32 	%r80, 0, 1, %p25;
+	bra.uni 	$Lt_1_69890;
+$Lt_1_70146:
+ //<loop> Part of loop body line 24, head labeled $Lt_1_63490
+	setp.gt.f32 	%p26, %f16, %f64;
+	selp.s32 	%r80, 0, 1, %p26;
+$Lt_1_69890:
+ //<loop> Part of loop body line 24, head labeled $Lt_1_63490
+	mov.u32 	%r81, 0;
+	setp.eq.s32 	%p27, %r80, %r81;
+	@%p27 bra 	$Lt_1_70658;
+ //<loop> Part of loop body line 24, head labeled $Lt_1_63490
+	@!%p6 bra 	$Lt_1_71170;
+ //<loop> Part of loop body line 24, head labeled $Lt_1_63490
+	setp.gt.f32 	%p28, %f15, %f76;
+	selp.s32 	%r82, 0, 1, %p28;
+	bra.uni 	$Lt_1_70914;
+$Lt_1_71170:
+ //<loop> Part of loop body line 24, head labeled $Lt_1_63490
+	setp.gt.f32 	%p29, %f16, %f76;
+	selp.s32 	%r82, 0, 1, %p29;
+$Lt_1_70914:
+ //<loop> Part of loop body line 24, head labeled $Lt_1_63490
+	mov.s32 	%r83, %r82;
+	bra.uni 	$Lt_1_70402;
+$Lt_1_70658:
+ //<loop> Part of loop body line 24, head labeled $Lt_1_63490
+	setp.lt.f32 	%p30, %f76, %f64;
+	selp.s32 	%r83, 0, 1, %p30;
+$Lt_1_70402:
+ //<loop> Part of loop body line 24, head labeled $Lt_1_63490
+	mov.u32 	%r84, 0;
+	setp.eq.s32 	%p31, %r83, %r84;
+	@%p31 bra 	$Lt_1_71682;
+ //<loop> Part of loop body line 24, head labeled $Lt_1_63490
+	@!%p6 bra 	$Lt_1_72194;
+ //<loop> Part of loop body line 24, head labeled $Lt_1_63490
+	setp.gt.f32 	%p32, %f15, %f64;
+	selp.s32 	%r85, 0, 1, %p32;
+	bra.uni 	$Lt_1_71938;
+$Lt_1_72194:
+ //<loop> Part of loop body line 24, head labeled $Lt_1_63490
+	setp.gt.f32 	%p33, %f16, %f64;
+	selp.s32 	%r85, 0, 1, %p33;
+$Lt_1_71938:
+ //<loop> Part of loop body line 24, head labeled $Lt_1_63490
+	mov.u32 	%r86, 0;
+	setp.eq.s32 	%p34, %r85, %r86;
+	@%p34 bra 	$Lt_1_72706;
+ //<loop> Part of loop body line 24, head labeled $Lt_1_63490
+	min.f32 	%f77, %f15, %f16;
+	bra.uni 	$Lt_1_72450;
+$Lt_1_72706:
+ //<loop> Part of loop body line 24, head labeled $Lt_1_63490
+	mov.f32 	%f77, %f64;
+$Lt_1_72450:
+ //<loop> Part of loop body line 24, head labeled $Lt_1_63490
+	mov.f32 	%f78, %f77;
+	bra.uni 	$Lt_1_71426;
+$Lt_1_71682:
+ //<loop> Part of loop body line 24, head labeled $Lt_1_63490
+	mov.f32 	%f78, %f76;
+$Lt_1_71426:
+ //<loop> Part of loop body line 24, head labeled $Lt_1_63490
+	mov.f32 	%f79, %f78;
+	bra.uni 	$Lt_1_69378;
+$Lt_1_69634:
+ //<loop> Part of loop body line 24, head labeled $Lt_1_63490
+	mov.f32 	%f79, %f10;
+$Lt_1_69378:
+ //<loop> Part of loop body line 24, head labeled $Lt_1_63490
+	mov.f32 	%f80, %f79;
+	bra.uni 	$Lt_1_64258;
+$Lt_1_64514:
+ //<loop> Part of loop body line 24, head labeled $Lt_1_63490
+	@!%p6 bra 	$Lt_1_73218;
+ //<loop> Part of loop body line 24, head labeled $Lt_1_63490
+	.loc	15	220	0
+	setp.gt.f32 	%p35, %f15, %f10;
+	selp.s32 	%r87, 0, 1, %p35;
+	bra.uni 	$Lt_1_72962;
+$Lt_1_73218:
+ //<loop> Part of loop body line 24, head labeled $Lt_1_63490
+	setp.gt.f32 	%p36, %f16, %f10;
+	selp.s32 	%r87, 0, 1, %p36;
+$Lt_1_72962:
+ //<loop> Part of loop body line 24, head labeled $Lt_1_63490
+	mov.u32 	%r88, 0;
+	setp.eq.s32 	%p37, %r87, %r88;
+	@%p37 bra 	$Lt_1_73730;
+ //<loop> Part of loop body line 24, head labeled $Lt_1_63490
+	min.f32 	%f81, %f15, %f16;
+	bra.uni 	$Lt_1_73474;
+$Lt_1_73730:
+ //<loop> Part of loop body line 24, head labeled $Lt_1_63490
+	mov.f32 	%f81, %f10;
+$Lt_1_73474:
+ //<loop> Part of loop body line 24, head labeled $Lt_1_63490
+	mov.f32 	%f80, %f81;
+$Lt_1_64258:
+ //<loop> Part of loop body line 24, head labeled $Lt_1_63490
+	.loc	15	224	0
+	st.shared.f32 	[%r18+0], %f80;
+	sub.f32 	%f82, %f10, %f12;
+	mad.f32 	%f83, %f4, %f6, %f12;
+	mad.f32 	%f84, %f4, %f5, %f10;
+	mul.f32 	%f85, %f14, %f7;
+	mul.f32 	%f86, %f82, %f82;
+	setp.lt.f32 	%p38, %f83, %f84;
+	mul.f32 	%f87, %f7, %f85;
+	sub.f32 	%f88, %f87, %f86;
+	mul.f32 	%f89, %f88, %f7;
+	mul.f32 	%f90, %f89, %f7;
+	mov.f32 	%f91, 0f00000000;    	// 0
+	setp.gt.f32 	%p39, %f90, %f91;
+	@!%p39 bra 	$Lt_1_74242;
+ //<loop> Part of loop body line 24, head labeled $Lt_1_63490
+	.loc	19	4505	0
+	mul.f32 	%f92, %f7, %f7;
+	add.f32 	%f93, %f7, %f7;
+	mov.f32 	%f94, 0f40800000;    	// 4
+	mul.f32 	%f95, %f6, %f94;
+	add.f32 	%f25, %f6, %f6;
+	mad.f32 	%f96, %f6, %f6, %f92;
+	mul.f32 	%f97, %f93, %f6;
+	mul.f32 	%f98, %f95, %f6;
+	mul.f32 	%f99, %f25, %f7;
+	mul.f32 	%f100, %f85, %f7;
+	mul.f32 	%f101, %f5, %f5;
+	sub.f32 	%f102, %f96, %f101;
+	mul.f32 	%f103, %f82, %f82;
+	sub.f32 	%f104, %f103, %f100;
+	div.full.f32 	%f105, %f102, %f99;
+	mov.f32 	%f106, 0f3f800000;   	// 1
+	mul.f32 	%f107, %f105, %f105;
+	sub.f32 	%f108, %f106, %f107;
+	mul.f32 	%f109, %f97, %f105;
+	mul.f32 	%f110, %f98, %f90;
+	add.f32 	%f111, %f90, %f90;
+	mul.f32 	%f112, %f104, %f109;
+	mul.f32 	%f113, %f82, %f110;
+	mul.f32 	%f114, %f82, %f113;
+	mul.f32 	%f115, %f108, %f114;
+	sqrt.approx.f32 	%f116, %f115;
+	sub.f32 	%f117, %f116, %f112;
+	div.full.f32 	%f51, %f117, %f111;
+	.loc	15	267	0
+	add.f32 	%f118, %f112, %f116;
+	neg.f32 	%f119, %f118;
+	mov.f32 	%f120, 0f00000000;   	// 0
+	set.ge.u32.f32 	%r89, %f51, %f120;
+	neg.s32 	%r90, %r89;
+	mov.f32 	%f121, 0f3f800000;   	// 1
+	set.le.u32.f32 	%r91, %f51, %f121;
+	neg.s32 	%r92, %r91;
+	and.b32 	%r93, %r90, %r92;
+	mov.u32 	%r94, 0;
+	setp.eq.s32 	%p40, %r93, %r94;
+	@%p40 bra 	$Lt_1_74754;
+ //<loop> Part of loop body line 24, head labeled $Lt_1_63490
+	.loc	15	275	0
+	mul.f32 	%f122, %f51, %f7;
+	mad.f32 	%f123, %f51, %f82, %f12;
+	mul.f32 	%f124, %f6, %f6;
+	mad.f32 	%f125, %f122, %f122, %f124;
+	mul.f32 	%f126, %f122, %f25;
+	mul.f32 	%f127, %f105, %f126;
+	sub.f32 	%f128, %f125, %f127;
+	sqrt.approx.f32 	%f129, %f128;
+	mad.f32 	%f64, %f4, %f129, %f123;
+	bra.uni 	$Lt_1_74498;
+$Lt_1_74754:
+ //<loop> Part of loop body line 24, head labeled $Lt_1_63490
+	mov.f32 	%f64, 0f4b189680;    	// 1e+007
+$Lt_1_74498:
+ //<loop> Part of loop body line 24, head labeled $Lt_1_63490
+	div.full.f32 	%f130, %f119, %f111;
+	mov.f32 	%f131, 0f00000000;   	// 0
+	set.ge.u32.f32 	%r95, %f130, %f131;
+	neg.s32 	%r96, %r95;
+	mov.f32 	%f132, 0f3f800000;   	// 1
+	set.le.u32.f32 	%r97, %f130, %f132;
+	neg.s32 	%r98, %r97;
+	and.b32 	%r99, %r96, %r98;
+	mov.u32 	%r100, 0;
+	setp.eq.s32 	%p41, %r99, %r100;
+	@%p41 bra 	$Lt_1_75266;
+ //<loop> Part of loop body line 24, head labeled $Lt_1_63490
+	.loc	15	284	0
+	mul.f32 	%f133, %f130, %f7;
+	mad.f32 	%f134, %f82, %f130, %f12;
+	mul.f32 	%f135, %f6, %f6;
+	mad.f32 	%f136, %f133, %f133, %f135;
+	mul.f32 	%f137, %f133, %f25;
+	mul.f32 	%f138, %f105, %f137;
+	sub.f32 	%f139, %f136, %f138;
+	sqrt.approx.f32 	%f140, %f139;
+	mad.f32 	%f76, %f4, %f140, %f134;
+	bra.uni 	$Lt_1_75010;
+$Lt_1_75266:
+ //<loop> Part of loop body line 24, head labeled $Lt_1_63490
+	mov.f32 	%f76, 0f4b189680;    	// 1e+007
+$Lt_1_75010:
+ //<loop> Part of loop body line 24, head labeled $Lt_1_63490
+	@!%p38 bra 	$Lt_1_75778;
+ //<loop> Part of loop body line 24, head labeled $Lt_1_63490
+	.loc	15	289	0
+	setp.gt.f32 	%p42, %f83, %f64;
+	selp.s32 	%r101, 0, 1, %p42;
+	bra.uni 	$Lt_1_75522;
+$Lt_1_75778:
+ //<loop> Part of loop body line 24, head labeled $Lt_1_63490
+	setp.gt.f32 	%p43, %f84, %f64;
+	selp.s32 	%r101, 0, 1, %p43;
+$Lt_1_75522:
+ //<loop> Part of loop body line 24, head labeled $Lt_1_63490
+	mov.u32 	%r102, 0;
+	setp.eq.s32 	%p44, %r101, %r102;
+	@%p44 bra 	$Lt_1_76290;
+ //<loop> Part of loop body line 24, head labeled $Lt_1_63490
+	@!%p38 bra 	$Lt_1_76802;
+ //<loop> Part of loop body line 24, head labeled $Lt_1_63490
+	setp.gt.f32 	%p45, %f83, %f76;
+	selp.s32 	%r103, 0, 1, %p45;
+	bra.uni 	$Lt_1_76546;
+$Lt_1_76802:
+ //<loop> Part of loop body line 24, head labeled $Lt_1_63490
+	setp.gt.f32 	%p46, %f84, %f76;
+	selp.s32 	%r103, 0, 1, %p46;
+$Lt_1_76546:
+ //<loop> Part of loop body line 24, head labeled $Lt_1_63490
+	mov.s32 	%r104, %r103;
+	bra.uni 	$Lt_1_76034;
+$Lt_1_76290:
+ //<loop> Part of loop body line 24, head labeled $Lt_1_63490
+	setp.lt.f32 	%p47, %f76, %f64;
+	selp.s32 	%r104, 0, 1, %p47;
+$Lt_1_76034:
+ //<loop> Part of loop body line 24, head labeled $Lt_1_63490
+	mov.u32 	%r105, 0;
+	setp.eq.s32 	%p48, %r104, %r105;
+	@%p48 bra 	$Lt_1_77314;
+ //<loop> Part of loop body line 24, head labeled $Lt_1_63490
+	@!%p38 bra 	$Lt_1_77826;
+ //<loop> Part of loop body line 24, head labeled $Lt_1_63490
+	setp.gt.f32 	%p49, %f83, %f64;
+	selp.s32 	%r106, 0, 1, %p49;
+	bra.uni 	$Lt_1_77570;
+$Lt_1_77826:
+ //<loop> Part of loop body line 24, head labeled $Lt_1_63490
+	setp.gt.f32 	%p50, %f84, %f64;
+	selp.s32 	%r106, 0, 1, %p50;
+$Lt_1_77570:
+ //<loop> Part of loop body line 24, head labeled $Lt_1_63490
+	mov.u32 	%r107, 0;
+	setp.eq.s32 	%p51, %r106, %r107;
+	@%p51 bra 	$Lt_1_78338;
+ //<loop> Part of loop body line 24, head labeled $Lt_1_63490
+	@!%p38 bra 	$Lt_1_78850;
+ //<loop> Part of loop body line 24, head labeled $Lt_1_63490
+	setp.gt.f32 	%p52, %f83, %f11;
+	selp.s32 	%r108, 0, 1, %p52;
+	bra.uni 	$Lt_1_78594;
+$Lt_1_78850:
+ //<loop> Part of loop body line 24, head labeled $Lt_1_63490
+	setp.gt.f32 	%p53, %f84, %f11;
+	selp.s32 	%r108, 0, 1, %p53;
+$Lt_1_78594:
+ //<loop> Part of loop body line 24, head labeled $Lt_1_63490
+	mov.s32 	%r109, %r108;
+	bra.uni 	$Lt_1_78082;
+$Lt_1_78338:
+ //<loop> Part of loop body line 24, head labeled $Lt_1_63490
+	setp.lt.f32 	%p54, %f11, %f64;
+	selp.s32 	%r109, 0, 1, %p54;
+$Lt_1_78082:
+ //<loop> Part of loop body line 24, head labeled $Lt_1_63490
+	mov.s32 	%r110, %r109;
+	bra.uni 	$Lt_1_77058;
+$Lt_1_77314:
+ //<loop> Part of loop body line 24, head labeled $Lt_1_63490
+	setp.lt.f32 	%p55, %f11, %f76;
+	selp.s32 	%r110, 0, 1, %p55;
+$Lt_1_77058:
+ //<loop> Part of loop body line 24, head labeled $Lt_1_63490
+	mov.u32 	%r111, 0;
+	setp.eq.s32 	%p56, %r110, %r111;
+	@%p56 bra 	$Lt_1_79362;
+ //<loop> Part of loop body line 24, head labeled $Lt_1_63490
+	@!%p38 bra 	$Lt_1_79874;
+ //<loop> Part of loop body line 24, head labeled $Lt_1_63490
+	setp.gt.f32 	%p57, %f83, %f64;
+	selp.s32 	%r112, 0, 1, %p57;
+	bra.uni 	$Lt_1_79618;
+$Lt_1_79874:
+ //<loop> Part of loop body line 24, head labeled $Lt_1_63490
+	setp.gt.f32 	%p58, %f84, %f64;
+	selp.s32 	%r112, 0, 1, %p58;
+$Lt_1_79618:
+ //<loop> Part of loop body line 24, head labeled $Lt_1_63490
+	mov.u32 	%r113, 0;
+	setp.eq.s32 	%p59, %r112, %r113;
+	@%p59 bra 	$Lt_1_80386;
+ //<loop> Part of loop body line 24, head labeled $Lt_1_63490
+	@!%p38 bra 	$Lt_1_80898;
+ //<loop> Part of loop body line 24, head labeled $Lt_1_63490
+	setp.gt.f32 	%p60, %f83, %f76;
+	selp.s32 	%r114, 0, 1, %p60;
+	bra.uni 	$Lt_1_80642;
+$Lt_1_80898:
+ //<loop> Part of loop body line 24, head labeled $Lt_1_63490
+	setp.gt.f32 	%p61, %f84, %f76;
+	selp.s32 	%r114, 0, 1, %p61;
+$Lt_1_80642:
+ //<loop> Part of loop body line 24, head labeled $Lt_1_63490
+	mov.s32 	%r115, %r114;
+	bra.uni 	$Lt_1_80130;
+$Lt_1_80386:
+ //<loop> Part of loop body line 24, head labeled $Lt_1_63490
+	setp.lt.f32 	%p62, %f76, %f64;
+	selp.s32 	%r115, 0, 1, %p62;
+$Lt_1_80130:
+ //<loop> Part of loop body line 24, head labeled $Lt_1_63490
+	mov.u32 	%r116, 0;
+	setp.eq.s32 	%p63, %r115, %r116;
+	@%p63 bra 	$Lt_1_81410;
+ //<loop> Part of loop body line 24, head labeled $Lt_1_63490
+	@!%p38 bra 	$Lt_1_81922;
+ //<loop> Part of loop body line 24, head labeled $Lt_1_63490
+	setp.gt.f32 	%p64, %f83, %f64;
+	selp.s32 	%r117, 0, 1, %p64;
+	bra.uni 	$Lt_1_81666;
+$Lt_1_81922:
+ //<loop> Part of loop body line 24, head labeled $Lt_1_63490
+	setp.gt.f32 	%p65, %f84, %f64;
+	selp.s32 	%r117, 0, 1, %p65;
+$Lt_1_81666:
+ //<loop> Part of loop body line 24, head labeled $Lt_1_63490
+	mov.u32 	%r118, 0;
+	setp.eq.s32 	%p66, %r117, %r118;
+	@%p66 bra 	$Lt_1_82434;
+ //<loop> Part of loop body line 24, head labeled $Lt_1_63490
+	min.f32 	%f141, %f83, %f84;
+	bra.uni 	$Lt_1_82178;
+$Lt_1_82434:
+ //<loop> Part of loop body line 24, head labeled $Lt_1_63490
+	mov.f32 	%f141, %f64;
+$Lt_1_82178:
+ //<loop> Part of loop body line 24, head labeled $Lt_1_63490
+	mov.f32 	%f142, %f141;
+	bra.uni 	$Lt_1_81154;
+$Lt_1_81410:
+ //<loop> Part of loop body line 24, head labeled $Lt_1_63490
+	mov.f32 	%f142, %f76;
+$Lt_1_81154:
+ //<loop> Part of loop body line 24, head labeled $Lt_1_63490
+	mov.f32 	%f143, %f142;
+	bra.uni 	$Lt_1_79106;
+$Lt_1_79362:
+ //<loop> Part of loop body line 24, head labeled $Lt_1_63490
+	mov.f32 	%f143, %f11;
+$Lt_1_79106:
+ //<loop> Part of loop body line 24, head labeled $Lt_1_63490
+	mov.f32 	%f80, %f143;
+	bra.uni 	$Lt_1_73986;
+$Lt_1_74242:
+ //<loop> Part of loop body line 24, head labeled $Lt_1_63490
+	@!%p38 bra 	$Lt_1_82946;
+ //<loop> Part of loop body line 24, head labeled $Lt_1_63490
+	.loc	15	295	0
+	setp.gt.f32 	%p67, %f83, %f11;
+	selp.s32 	%r119, 0, 1, %p67;
+	bra.uni 	$Lt_1_82690;
+$Lt_1_82946:
+ //<loop> Part of loop body line 24, head labeled $Lt_1_63490
+	setp.gt.f32 	%p68, %f84, %f11;
+	selp.s32 	%r119, 0, 1, %p68;
+$Lt_1_82690:
+ //<loop> Part of loop body line 24, head labeled $Lt_1_63490
+	mov.u32 	%r120, 0;
+	setp.eq.s32 	%p69, %r119, %r120;
+	@%p69 bra 	$Lt_1_83458;
+ //<loop> Part of loop body line 24, head labeled $Lt_1_63490
+	min.f32 	%f144, %f83, %f84;
+	bra.uni 	$Lt_1_83202;
+$Lt_1_83458:
+ //<loop> Part of loop body line 24, head labeled $Lt_1_63490
+	mov.f32 	%f144, %f11;
+$Lt_1_83202:
+ //<loop> Part of loop body line 24, head labeled $Lt_1_63490
+	mov.f32 	%f80, %f144;
+$Lt_1_73986:
+ //<loop> Part of loop body line 24, head labeled $Lt_1_63490
+	.loc	15	299	0
+	st.shared.f32 	[%r18+4], %f80;
+	sub.f32 	%f145, %f11, %f10;
+	mad.f32 	%f146, %f4, %f7, %f10;
+	mad.f32 	%f147, %f4, %f6, %f11;
+	mul.f32 	%f148, %f14, %f5;
+	mul.f32 	%f149, %f145, %f145;
+	setp.lt.f32 	%p70, %f146, %f147;
+	mul.f32 	%f150, %f5, %f148;
+	sub.f32 	%f151, %f150, %f149;
+	mul.f32 	%f152, %f151, %f5;
+	mul.f32 	%f153, %f152, %f5;
+	mov.f32 	%f154, 0f00000000;   	// 0
+	setp.gt.f32 	%p71, %f153, %f154;
+	@!%p71 bra 	$Lt_1_83970;
+ //<loop> Part of loop body line 24, head labeled $Lt_1_63490
+	.loc	19	4505	0
+	mov.f32 	%f155, 0f40800000;   	// 4
+	mul.f32 	%f156, %f7, %f155;
+	mul.f32 	%f92, %f7, %f7;
+	add.f32 	%f93, %f7, %f7;
+	add.f32 	%f24, %f5, %f5;
+	mul.f32 	%f157, %f156, %f7;
+	mad.f32 	%f158, %f5, %f5, %f92;
+	mul.f32 	%f159, %f93, %f5;
+	mul.f32 	%f160, %f24, %f7;
+	mul.f32 	%f161, %f148, %f5;
+	mul.f32 	%f162, %f6, %f6;
+	sub.f32 	%f163, %f158, %f162;
+	mul.f32 	%f164, %f145, %f145;
+	sub.f32 	%f165, %f164, %f161;
+	div.full.f32 	%f166, %f163, %f159;
+	mov.f32 	%f167, 0f3f800000;   	// 1
+	mul.f32 	%f168, %f166, %f166;
+	sub.f32 	%f169, %f167, %f168;
+	mul.f32 	%f170, %f160, %f166;
+	mul.f32 	%f171, %f157, %f153;
+	add.f32 	%f172, %f153, %f153;
+	mul.f32 	%f173, %f165, %f170;
+	mul.f32 	%f174, %f145, %f171;
+	mul.f32 	%f175, %f145, %f174;
+	mul.f32 	%f176, %f169, %f175;
+	sqrt.approx.f32 	%f177, %f176;
+	sub.f32 	%f178, %f177, %f173;
+	div.full.f32 	%f51, %f178, %f172;
+	.loc	15	344	0
+	add.f32 	%f179, %f173, %f177;
+	neg.f32 	%f180, %f179;
+	mov.f32 	%f181, 0f00000000;   	// 0
+	set.ge.u32.f32 	%r121, %f51, %f181;
+	neg.s32 	%r122, %r121;
+	mov.f32 	%f182, 0f3f800000;   	// 1
+	set.le.u32.f32 	%r123, %f51, %f182;
+	neg.s32 	%r124, %r123;
+	and.b32 	%r125, %r122, %r124;
+	mov.u32 	%r126, 0;
+	setp.eq.s32 	%p72, %r125, %r126;
+	@%p72 bra 	$Lt_1_84482;
+ //<loop> Part of loop body line 24, head labeled $Lt_1_63490
+	.loc	15	352	0
+	mul.f32 	%f183, %f51, %f5;
+	mad.f32 	%f184, %f51, %f145, %f10;
+	mad.f32 	%f185, %f183, %f183, %f92;
+	mul.f32 	%f186, %f183, %f93;
+	mul.f32 	%f187, %f166, %f186;
+	sub.f32 	%f188, %f185, %f187;
+	sqrt.approx.f32 	%f189, %f188;
+	mad.f32 	%f64, %f4, %f189, %f184;
+	bra.uni 	$Lt_1_84226;
+$Lt_1_84482:
+ //<loop> Part of loop body line 24, head labeled $Lt_1_63490
+	mov.f32 	%f64, 0f4b189680;    	// 1e+007
+$Lt_1_84226:
+ //<loop> Part of loop body line 24, head labeled $Lt_1_63490
+	div.full.f32 	%f190, %f180, %f172;
+	mov.f32 	%f191, 0f00000000;   	// 0
+	set.ge.u32.f32 	%r127, %f190, %f191;
+	neg.s32 	%r128, %r127;
+	mov.f32 	%f192, 0f3f800000;   	// 1
+	set.le.u32.f32 	%r129, %f190, %f192;
+	neg.s32 	%r130, %r129;
+	and.b32 	%r131, %r128, %r130;
+	mov.u32 	%r132, 0;
+	setp.eq.s32 	%p73, %r131, %r132;
+	@%p73 bra 	$Lt_1_84994;
+ //<loop> Part of loop body line 24, head labeled $Lt_1_63490
+	.loc	15	361	0
+	mul.f32 	%f193, %f190, %f5;
+	mad.f32 	%f194, %f145, %f190, %f10;
+	mad.f32 	%f195, %f193, %f193, %f92;
+	mul.f32 	%f196, %f193, %f93;
+	mul.f32 	%f197, %f166, %f196;
+	sub.f32 	%f198, %f195, %f197;
+	sqrt.approx.f32 	%f199, %f198;
+	mad.f32 	%f76, %f4, %f199, %f194;
+	bra.uni 	$Lt_1_84738;
+$Lt_1_84994:
+ //<loop> Part of loop body line 24, head labeled $Lt_1_63490
+	mov.f32 	%f76, 0f4b189680;    	// 1e+007
+$Lt_1_84738:
+ //<loop> Part of loop body line 24, head labeled $Lt_1_63490
+	@!%p70 bra 	$Lt_1_85506;
+ //<loop> Part of loop body line 24, head labeled $Lt_1_63490
+	.loc	15	366	0
+	setp.gt.f32 	%p74, %f146, %f64;
+	selp.s32 	%r133, 0, 1, %p74;
+	bra.uni 	$Lt_1_85250;
+$Lt_1_85506:
+ //<loop> Part of loop body line 24, head labeled $Lt_1_63490
+	setp.gt.f32 	%p75, %f147, %f64;
+	selp.s32 	%r133, 0, 1, %p75;
+$Lt_1_85250:
+ //<loop> Part of loop body line 24, head labeled $Lt_1_63490
+	mov.u32 	%r134, 0;
+	setp.eq.s32 	%p76, %r133, %r134;
+	@%p76 bra 	$Lt_1_86018;
+ //<loop> Part of loop body line 24, head labeled $Lt_1_63490
+	@!%p70 bra 	$Lt_1_86530;
+ //<loop> Part of loop body line 24, head labeled $Lt_1_63490
+	setp.gt.f32 	%p77, %f146, %f76;
+	selp.s32 	%r135, 0, 1, %p77;
+	bra.uni 	$Lt_1_86274;
+$Lt_1_86530:
+ //<loop> Part of loop body line 24, head labeled $Lt_1_63490
+	setp.gt.f32 	%p78, %f147, %f76;
+	selp.s32 	%r135, 0, 1, %p78;
+$Lt_1_86274:
+ //<loop> Part of loop body line 24, head labeled $Lt_1_63490
+	mov.s32 	%r136, %r135;
+	bra.uni 	$Lt_1_85762;
+$Lt_1_86018:
+ //<loop> Part of loop body line 24, head labeled $Lt_1_63490
+	setp.lt.f32 	%p79, %f76, %f64;
+	selp.s32 	%r136, 0, 1, %p79;
+$Lt_1_85762:
+ //<loop> Part of loop body line 24, head labeled $Lt_1_63490
+	mov.u32 	%r137, 0;
+	setp.eq.s32 	%p80, %r136, %r137;
+	@%p80 bra 	$Lt_1_87042;
+ //<loop> Part of loop body line 24, head labeled $Lt_1_63490
+	@!%p70 bra 	$Lt_1_87554;
+ //<loop> Part of loop body line 24, head labeled $Lt_1_63490
+	setp.gt.f32 	%p81, %f146, %f64;
+	selp.s32 	%r138, 0, 1, %p81;
+	bra.uni 	$Lt_1_87298;
+$Lt_1_87554:
+ //<loop> Part of loop body line 24, head labeled $Lt_1_63490
+	setp.gt.f32 	%p82, %f147, %f64;
+	selp.s32 	%r138, 0, 1, %p82;
+$Lt_1_87298:
+ //<loop> Part of loop body line 24, head labeled $Lt_1_63490
+	mov.u32 	%r139, 0;
+	setp.eq.s32 	%p83, %r138, %r139;
+	@%p83 bra 	$Lt_1_88066;
+ //<loop> Part of loop body line 24, head labeled $Lt_1_63490
+	@!%p70 bra 	$Lt_1_88578;
+ //<loop> Part of loop body line 24, head labeled $Lt_1_63490
+	setp.gt.f32 	%p84, %f146, %f12;
+	selp.s32 	%r140, 0, 1, %p84;
+	bra.uni 	$Lt_1_88322;
+$Lt_1_88578:
+ //<loop> Part of loop body line 24, head labeled $Lt_1_63490
+	setp.gt.f32 	%p85, %f147, %f12;
+	selp.s32 	%r140, 0, 1, %p85;
+$Lt_1_88322:
+ //<loop> Part of loop body line 24, head labeled $Lt_1_63490
+	mov.s32 	%r141, %r140;
+	bra.uni 	$Lt_1_87810;
+$Lt_1_88066:
+ //<loop> Part of loop body line 24, head labeled $Lt_1_63490
+	setp.lt.f32 	%p86, %f12, %f64;
+	selp.s32 	%r141, 0, 1, %p86;
+$Lt_1_87810:
+ //<loop> Part of loop body line 24, head labeled $Lt_1_63490
+	mov.s32 	%r142, %r141;
+	bra.uni 	$Lt_1_86786;
+$Lt_1_87042:
+ //<loop> Part of loop body line 24, head labeled $Lt_1_63490
+	setp.lt.f32 	%p87, %f12, %f76;
+	selp.s32 	%r142, 0, 1, %p87;
+$Lt_1_86786:
+ //<loop> Part of loop body line 24, head labeled $Lt_1_63490
+	mov.u32 	%r143, 0;
+	setp.eq.s32 	%p88, %r142, %r143;
+	@%p88 bra 	$Lt_1_89090;
+ //<loop> Part of loop body line 24, head labeled $Lt_1_63490
+	@!%p70 bra 	$Lt_1_89602;
+ //<loop> Part of loop body line 24, head labeled $Lt_1_63490
+	setp.gt.f32 	%p89, %f146, %f64;
+	selp.s32 	%r144, 0, 1, %p89;
+	bra.uni 	$Lt_1_89346;
+$Lt_1_89602:
+ //<loop> Part of loop body line 24, head labeled $Lt_1_63490
+	setp.gt.f32 	%p90, %f147, %f64;
+	selp.s32 	%r144, 0, 1, %p90;
+$Lt_1_89346:
+ //<loop> Part of loop body line 24, head labeled $Lt_1_63490
+	mov.u32 	%r145, 0;
+	setp.eq.s32 	%p91, %r144, %r145;
+	@%p91 bra 	$Lt_1_90114;
+ //<loop> Part of loop body line 24, head labeled $Lt_1_63490
+	@!%p70 bra 	$Lt_1_90626;
+ //<loop> Part of loop body line 24, head labeled $Lt_1_63490
+	setp.gt.f32 	%p92, %f146, %f76;
+	selp.s32 	%r146, 0, 1, %p92;
+	bra.uni 	$Lt_1_90370;
+$Lt_1_90626:
+ //<loop> Part of loop body line 24, head labeled $Lt_1_63490
+	setp.gt.f32 	%p93, %f147, %f76;
+	selp.s32 	%r146, 0, 1, %p93;
+$Lt_1_90370:
+ //<loop> Part of loop body line 24, head labeled $Lt_1_63490
+	mov.s32 	%r147, %r146;
+	bra.uni 	$Lt_1_89858;
+$Lt_1_90114:
+ //<loop> Part of loop body line 24, head labeled $Lt_1_63490
+	setp.lt.f32 	%p94, %f76, %f64;
+	selp.s32 	%r147, 0, 1, %p94;
+$Lt_1_89858:
+ //<loop> Part of loop body line 24, head labeled $Lt_1_63490
+	mov.u32 	%r148, 0;
+	setp.eq.s32 	%p95, %r147, %r148;
+	@%p95 bra 	$Lt_1_91138;
+ //<loop> Part of loop body line 24, head labeled $Lt_1_63490
+	@!%p70 bra 	$Lt_1_91650;
+ //<loop> Part of loop body line 24, head labeled $Lt_1_63490
+	setp.gt.f32 	%p96, %f146, %f64;
+	selp.s32 	%r149, 0, 1, %p96;
+	bra.uni 	$Lt_1_91394;
+$Lt_1_91650:
+ //<loop> Part of loop body line 24, head labeled $Lt_1_63490
+	setp.gt.f32 	%p97, %f147, %f64;
+	selp.s32 	%r149, 0, 1, %p97;
+$Lt_1_91394:
+ //<loop> Part of loop body line 24, head labeled $Lt_1_63490
+	mov.u32 	%r150, 0;
+	setp.eq.s32 	%p98, %r149, %r150;
+	@%p98 bra 	$Lt_1_92162;
+ //<loop> Part of loop body line 24, head labeled $Lt_1_63490
+	min.f32 	%f200, %f146, %f147;
+	bra.uni 	$Lt_1_91906;
+$Lt_1_92162:
+ //<loop> Part of loop body line 24, head labeled $Lt_1_63490
+	mov.f32 	%f200, %f64;
+$Lt_1_91906:
+ //<loop> Part of loop body line 24, head labeled $Lt_1_63490
+	mov.f32 	%f201, %f200;
+	bra.uni 	$Lt_1_90882;
+$Lt_1_91138:
+ //<loop> Part of loop body line 24, head labeled $Lt_1_63490
+	mov.f32 	%f201, %f76;
+$Lt_1_90882:
+ //<loop> Part of loop body line 24, head labeled $Lt_1_63490
+	mov.f32 	%f202, %f201;
+	bra.uni 	$Lt_1_88834;
+$Lt_1_89090:
+ //<loop> Part of loop body line 24, head labeled $Lt_1_63490
+	mov.f32 	%f202, %f12;
+$Lt_1_88834:
+ //<loop> Part of loop body line 24, head labeled $Lt_1_63490
+	mov.f32 	%f80, %f202;
+	bra.uni 	$Lt_1_83714;
+$Lt_1_83970:
+ //<loop> Part of loop body line 24, head labeled $Lt_1_63490
+	@!%p70 bra 	$Lt_1_92674;
+ //<loop> Part of loop body line 24, head labeled $Lt_1_63490
+	.loc	15	372	0
+	setp.gt.f32 	%p99, %f146, %f12;
+	selp.s32 	%r151, 0, 1, %p99;
+	bra.uni 	$Lt_1_92418;
+$Lt_1_92674:
+ //<loop> Part of loop body line 24, head labeled $Lt_1_63490
+	setp.gt.f32 	%p100, %f147, %f12;
+	selp.s32 	%r151, 0, 1, %p100;
+$Lt_1_92418:
+ //<loop> Part of loop body line 24, head labeled $Lt_1_63490
+	mov.u32 	%r152, 0;
+	setp.eq.s32 	%p101, %r151, %r152;
+	@%p101 bra 	$Lt_1_93186;
+ //<loop> Part of loop body line 24, head labeled $Lt_1_63490
+	min.f32 	%f203, %f146, %f147;
+	bra.uni 	$Lt_1_92930;
+$Lt_1_93186:
+ //<loop> Part of loop body line 24, head labeled $Lt_1_63490
+	mov.f32 	%f203, %f12;
+$Lt_1_92930:
+ //<loop> Part of loop body line 24, head labeled $Lt_1_63490
+	mov.f32 	%f80, %f203;
+$Lt_1_83714:
+ //<loop> Part of loop body line 24, head labeled $Lt_1_63490
+	.loc	15	376	0
+	st.shared.f32 	[%r18+8], %f80;
+$L_1_61698:
+ //<loop> Part of loop body line 24, head labeled $Lt_1_63490
+	.loc	15	381	0
+	bar.sync 	0;
+	@!%p2 bra 	$Lt_1_97026;
+ //<loop> Part of loop body line 24, head labeled $Lt_1_63490
+	.loc	15	391	0
+	mov.s32 	%r153, 0;
+	mov.f32 	%f80, 0f4b189680;    	// 1e+007
+$Lt_1_38402:
+ //<loop> Loop body line 391
+	mov.u32 	%r154, 5;
+	setp.gt.s32 	%p102, %r153, %r154;
+	@%p102 bra 	$Lt_1_96514;
+ //<loop> Part of loop body line 391, head labeled $Lt_1_38402
+	mul24.lo.u32 	%r155, %r15, 6;
+	add.u32 	%r156, %r153, %r155;
+	mul.lo.u32 	%r157, %r156, 2;
+	add.u32 	%r158, %r23, %r157;
+	ld.shared.s16 	%r159, [%r158+0];
+	mov.u32 	%r160, -1;
+	setp.le.s32 	%p103, %r159, %r160;
+	@%p103 bra 	$Lt_1_96514;
+ //<loop> Part of loop body line 391, head labeled $Lt_1_38402
+	ld.shared.s16 	%r159, [%r158+0];
+	mul24.lo.u32 	%r161, %r159, 4;
+	add.u32 	%r162, %r161, %r1;
+	ld.shared.f32 	%f204, [%r162+0];
+	setp.gt.f32 	%p104, %f204, %f80;
+	@!%p104 bra 	$Lt_1_94210;
+ //<loop> Part of loop body line 391, head labeled $Lt_1_38402
+	.loc	15	394	0
+	mov.f32 	%f205, %f80;
+	bra.uni 	$Lt_1_93954;
+$Lt_1_94210:
+ //<loop> Part of loop body line 391, head labeled $Lt_1_38402
+	.loc	15	391	0
+	ld.shared.f32 	%f204, [%r162+0];
+	.loc	15	394	0
+	mov.f32 	%f205, %f204;
+$Lt_1_93954:
+ //<loop> Part of loop body line 391, head labeled $Lt_1_38402
+	mov.f32 	%f80, %f205;
+	.loc	15	391	0
+	add.s32 	%r153, %r153, 1;
+	bra.uni 	$Lt_1_38402;
+$Lt_1_96514:
+$Lt_1_37890:
+ //<loop> Part of loop body line 24, head labeled $Lt_1_63490
+	.loc	15	398	0
+	mov.f32 	%f206, %f80;
+	.loc	15	400	0
+	mov.s32 	%r163, 0;
+$Lt_1_39426:
+ //<loop> Loop body line 400
+	mov.u32 	%r164, 5;
+	setp.gt.s32 	%p105, %r163, %r164;
+	@%p105 bra 	$Lt_1_97026;
+ //<loop> Part of loop body line 400, head labeled $Lt_1_39426
+	mul24.lo.u32 	%r165, %r15, 6;
+	add.u32 	%r166, %r163, %r165;
+	mul.lo.u32 	%r167, %r166, 2;
+	add.u32 	%r168, %r23, %r167;
+	ld.shared.s16 	%r159, [%r168+0];
+	mov.u32 	%r169, -1;
+	setp.le.s32 	%p106, %r159, %r169;
+	@%p106 bra 	$Lt_1_97026;
+ //<loop> Part of loop body line 400, head labeled $Lt_1_39426
+	ld.shared.s16 	%r159, [%r168+0];
+	.loc	15	402	0
+	mul24.lo.u32 	%r170, %r159, 4;
+	add.u32 	%r171, %r1, %r170;
+	st.shared.f32 	[%r171+0], %f80;
+	.loc	15	400	0
+	add.s32 	%r163, %r163, 1;
+	bra.uni 	$Lt_1_39426;
+$Lt_1_97026:
+$Lt_1_38914:
+$Lt_1_93442:
+ //<loop> Part of loop body line 24, head labeled $Lt_1_63490
+	.loc	15	406	0
+	bar.sync 	0;
+	add.s32 	%r53, %r53, 1;
+	mov.u32 	%r172, 6;
+	setp.ne.s32 	%p107, %r53, %r172;
+	@%p107 bra 	$Lt_1_63490;
+	@!%p2 bra 	$Lt_1_94978;
+	.loc	15	416	0
+	mov.f32 	%f207, %f206;
+	mov.f32 	%f208, %f9;
+	sub.f32 	%f209, %f208, %f207;
+	mov.f32 	%f210, 0f358637bd;   	// 1e-006
+	set.lt.u32.f32 	%r173, %f209, %f210;
+	neg.s32 	%r174, %r173;
+	ld.param.u32 	%r175, [__cudaparm__Z7FIMCudaPfS_PiS0_S_S_S_S_S0_S0_S0_iiif_d_con];
+	mul.lo.u32 	%r176, %r8, 64;
+	add.u32 	%r177, %r15, %r176;
+	mul.lo.u32 	%r178, %r177, 4;
+	add.u32 	%r179, %r175, %r178;
+	st.global.s32 	[%r179+0], %r174;
+	.loc	15	418	0
+	mov.s32 	%r180, 0;
+$Lt_1_41474:
+ //<loop> Loop body line 418
+	mov.u32 	%r181, 5;
+	setp.gt.s32 	%p108, %r180, %r181;
+	@%p108 bra 	$Lt_1_97538;
+ //<loop> Part of loop body line 418, head labeled $Lt_1_41474
+	mul24.lo.u32 	%r182, %r15, 6;
+	add.u32 	%r183, %r180, %r182;
+	mul.lo.u32 	%r184, %r183, 2;
+	add.u32 	%r185, %r23, %r184;
+	ld.shared.s16 	%r186, [%r185+0];
+	mov.u32 	%r187, -1;
+	setp.le.s32 	%p109, %r186, %r187;
+	@%p109 bra 	$Lt_1_97538;
+ //<loop> Part of loop body line 418, head labeled $Lt_1_41474
+	.loc	15	420	0
+	ld.param.u32 	%r188, [__cudaparm__Z7FIMCudaPfS_PiS0_S_S_S_S_S0_S0_S0_iiif_d_triMemOut];
+	mul.lo.u32 	%r189, %r14, 3;
+	.loc	15	418	0
+	ld.shared.s16 	%r186, [%r185+0];
+	.loc	15	420	0
+	add.u32 	%r190, %r186, %r189;
+	mul.lo.u32 	%r191, %r190, 4;
+	add.u32 	%r192, %r188, %r191;
+	st.global.f32 	[%r192+0], %f207;
+	.loc	15	418	0
+	add.s32 	%r180, %r180, 1;
+	bra.uni 	$Lt_1_41474;
+$Lt_1_97538:
+$Lt_1_40962:
+	.loc	15	423	0
+	mov.s32 	%r193, 0;
+$Lt_1_42498:
+ //<loop> Loop body line 423
+	mov.u32 	%r194, 5;
+	setp.gt.s32 	%p110, %r193, %r194;
+	@%p110 bra 	$Lt_1_95234;
+ //<loop> Part of loop body line 423, head labeled $Lt_1_42498
+	ld.param.u32 	%r195, [__cudaparm__Z7FIMCudaPfS_PiS0_S_S_S_S_S0_S0_S0_iiif_d_vertMemOutside];
+	mul.lo.u32 	%r196, %r8, %r24;
+	add.u32 	%r197, %r15, %r196;
+	mul.lo.u32 	%r198, %r197, 6;
+	add.u32 	%r199, %r193, %r198;
+	mul.lo.u32 	%r200, %r199, 4;
+	add.u32 	%r201, %r195, %r200;
+	ld.global.s32 	%r186, [%r201+0];
+	mov.u32 	%r202, -1;
+	setp.le.s32 	%p111, %r186, %r202;
+	@%p111 bra 	$Lt_1_95234;
+ //<loop> Part of loop body line 423, head labeled $Lt_1_42498
+	.loc	15	426	0
+	ld.param.u32 	%r203, [__cudaparm__Z7FIMCudaPfS_PiS0_S_S_S_S_S0_S0_S0_iiif_d_triMemOut];
+	mul.lo.u32 	%r204, %r186, 4;
+	add.u32 	%r205, %r203, %r204;
+	st.global.f32 	[%r205+0], %f207;
+	.loc	15	423	0
+	add.s32 	%r193, %r193, 1;
+	bra.uni 	$Lt_1_42498;
+$Lt_1_94978:
+	mov.u32 	%r206, 63;
+	setp.gt.u32 	%p112, %r15, %r206;
+	@%p112 bra 	$Lt_1_95234;
+	.loc	15	432	0
+	mov.s32 	%r207, 1;
+	ld.param.u32 	%r208, [__cudaparm__Z7FIMCudaPfS_PiS0_S_S_S_S_S0_S0_S0_iiif_d_con];
+	mul.lo.u32 	%r209, %r8, 64;
+	add.u32 	%r210, %r15, %r209;
+	mul.lo.u32 	%r211, %r210, 4;
+	add.u32 	%r212, %r208, %r211;
+	st.global.s32 	[%r212+0], %r207;
+$Lt_1_95234:
+$Lt_1_94722:
+	.loc	15	438	0
+	exit;
+$LDWend__Z7FIMCudaPfS_PiS0_S_S_S_S_S0_S0_S0_iiif:
+	} // _Z7FIMCudaPfS_PiS0_S_S_S_S_S0_S0_S0_iiif
+
+	.entry _Z18run_check_neighborPfS_PiS0_S_S_S_S_S0_S0_S0_iiiii (
+		.param .u32 __cudaparm__Z18run_check_neighborPfS_PiS0_S_S_S_S_S0_S0_S0_iiiii_d_triMem,
+		.param .u32 __cudaparm__Z18run_check_neighborPfS_PiS0_S_S_S_S_S0_S0_S0_iiiii_d_triMemOut,
+		.param .u32 __cudaparm__Z18run_check_neighborPfS_PiS0_S_S_S_S_S0_S0_S0_iiiii_d_vertMem,
+		.param .u32 __cudaparm__Z18run_check_neighborPfS_PiS0_S_S_S_S_S0_S0_S0_iiiii_d_vertMemOutside,
+		.param .u32 __cudaparm__Z18run_check_neighborPfS_PiS0_S_S_S_S_S0_S0_S0_iiiii_d_edgeMem0,
+		.param .u32 __cudaparm__Z18run_check_neighborPfS_PiS0_S_S_S_S_S0_S0_S0_iiiii_d_edgeMem1,
+		.param .u32 __cudaparm__Z18run_check_neighborPfS_PiS0_S_S_S_S_S0_S0_S0_iiiii_d_edgeMem2,
+		.param .u32 __cudaparm__Z18run_check_neighborPfS_PiS0_S_S_S_S_S0_S0_S0_iiiii_d_speed,
+		.param .u32 __cudaparm__Z18run_check_neighborPfS_PiS0_S_S_S_S_S0_S0_S0_iiiii_d_BlockSizes,
+		.param .u32 __cudaparm__Z18run_check_neighborPfS_PiS0_S_S_S_S_S0_S0_S0_iiiii_d_con,
+		.param .u32 __cudaparm__Z18run_check_neighborPfS_PiS0_S_S_S_S_S0_S0_S0_iiiii_d_ActiveList,
+		.param .s32 __cudaparm__Z18run_check_neighborPfS_PiS0_S_S_S_S_S0_S0_S0_iiiii_numOldActive,
+		.param .s32 __cudaparm__Z18run_check_neighborPfS_PiS0_S_S_S_S_S0_S0_S0_iiiii_maxNumTotalFaces,
+		.param .s32 __cudaparm__Z18run_check_neighborPfS_PiS0_S_S_S_S_S0_S0_S0_iiiii_maxNumVert,
+		.param .s32 __cudaparm__Z18run_check_neighborPfS_PiS0_S_S_S_S_S0_S0_S0_iiiii_nTotalActive,
+		.param .s32 __cudaparm__Z18run_check_neighborPfS_PiS0_S_S_S_S_S0_S0_S0_iiiii_m_StopDistance)
+	{
+	.reg .u16 %rh<5>;
+	.reg .u32 %r<221>;
+	.reg .f32 %f<213>;
+	.reg .f64 %fd<8>;
+	.reg .pred %p<114>;
+	.loc	15	444	0
+$LBB1__Z18run_check_neighborPfS_PiS0_S_S_S_S_S0_S0_S0_iiiii:
+	mov.u16 	%rh1, %nctaid.x;
+	mov.u16 	%rh2, %ctaid.y;
+	mul.wide.u16 	%r1, %rh1, %rh2;
+	cvt.u32.u16 	%r2, %ctaid.x;
+	add.u32 	%r3, %r2, %r1;
+	ld.param.u32 	%r4, [__cudaparm__Z18run_check_neighborPfS_PiS0_S_S_S_S_S0_S0_S0_iiiii_nTotalActive];
+	setp.le.u32 	%p1, %r4, %r3;
+	@%p1 bra 	$Lt_2_94466;
+	.loc	15	453	0
+	mov.u32 	%r5, s_run_check_neghbor_array;
+	ld.param.u32 	%r6, [__cudaparm__Z18run_check_neighborPfS_PiS0_S_S_S_S_S0_S0_S0_iiiii_d_ActiveList];
+	mul.lo.u32 	%r7, %r3, 4;
+	add.u32 	%r8, %r6, %r7;
+	ld.global.u32 	%r9, [%r8+0];
+	.loc	15	454	0
+	ld.param.u32 	%r10, [__cudaparm__Z18run_check_neighborPfS_PiS0_S_S_S_S_S0_S0_S0_iiiii_d_BlockSizes];
+	mul.lo.u32 	%r11, %r9, 4;
+	add.u32 	%r12, %r10, %r11;
+	ld.global.s32 	%r13, [%r12+0];
+	.loc	15	472	0
+	ld.param.u32 	%r14, [__cudaparm__Z18run_check_neighborPfS_PiS0_S_S_S_S_S0_S0_S0_iiiii_maxNumTotalFaces];
+	mul.lo.u32 	%r15, %r9, %r14;
+	cvt.u32.u16 	%r16, %tid.x;
+	add.u32 	%r17, %r15, %r16;
+	mul.lo.u32 	%r18, %r17, 4;
+	ld.param.u32 	%r19, [__cudaparm__Z18run_check_neighborPfS_PiS0_S_S_S_S_S0_S0_S0_iiiii_d_speed];
+	add.u32 	%r20, %r19, %r18;
+	ld.global.f32 	%f1, [%r20+0];
+	.loc	15	477	0
+	ld.param.u32 	%r21, [__cudaparm__Z18run_check_neighborPfS_PiS0_S_S_S_S_S0_S0_S0_iiiii_d_edgeMem0];
+	add.u32 	%r22, %r21, %r18;
+	ld.global.f32 	%f2, [%r22+0];
+	.loc	15	478	0
+	ld.param.u32 	%r23, [__cudaparm__Z18run_check_neighborPfS_PiS0_S_S_S_S_S0_S0_S0_iiiii_d_edgeMem1];
+	add.u32 	%r24, %r23, %r18;
+	ld.global.f32 	%f3, [%r24+0];
+	.loc	15	479	0
+	ld.param.u32 	%r25, [__cudaparm__Z18run_check_neighborPfS_PiS0_S_S_S_S_S0_S0_S0_iiiii_d_edgeMem2];
+	add.u32 	%r26, %r25, %r18;
+	ld.global.f32 	%f4, [%r26+0];
+	.loc	15	484	0
+	mul24.lo.u32 	%r27, %r16, 12;
+	add.u32 	%r28, %r27, %r5;
+	mul.lo.u32 	%r29, %r17, 12;
+	ld.param.u32 	%r30, [__cudaparm__Z18run_check_neighborPfS_PiS0_S_S_S_S_S0_S0_S0_iiiii_d_triMem];
+	add.u32 	%r31, %r30, %r29;
+	ld.global.f32 	%f5, [%r31+0];
+	st.shared.f32 	[%r28+0], %f5;
+	ld.global.f32 	%f6, [%r31+4];
+	st.shared.f32 	[%r28+4], %f6;
+	ld.global.f32 	%f7, [%r31+8];
+	st.shared.f32 	[%r28+8], %f7;
+	ld.param.u32 	%r32, [__cudaparm__Z18run_check_neighborPfS_PiS0_S_S_S_S_S0_S0_S0_iiiii_maxNumVert];
+	setp.le.u32 	%p2, %r32, %r16;
+	@%p2 bra 	$Lt_2_62722;
+	.loc	15	491	0
+	mul.lo.u32 	%r33, %r9, %r32;
+	mul.lo.u32 	%r34, %r14, 12;
+	mul.lo.u32 	%r35, %r15, 3;
+	add.u32 	%r36, %r33, %r16;
+	add.u32 	%r37, %r34, %r5;
+	mul.lo.u32 	%r38, %r36, 24;
+	add.u32 	%r39, %r27, %r37;
+	ld.param.u32 	%r40, [__cudaparm__Z18run_check_neighborPfS_PiS0_S_S_S_S_S0_S0_S0_iiiii_d_vertMem];
+	add.u32 	%r41, %r40, %r38;
+	ld.global.u16 	%r42, [%r41+0];
+	sub.u32 	%r43, %r42, %r35;
+	st.shared.s16 	[%r39+0], %r43;
+	ld.global.u16 	%r44, [%r41+4];
+	sub.u32 	%r45, %r44, %r35;
+	st.shared.s16 	[%r39+2], %r45;
+	ld.global.u16 	%r46, [%r41+8];
+	sub.u32 	%r47, %r46, %r35;
+	st.shared.s16 	[%r39+4], %r47;
+	ld.global.u16 	%r48, [%r41+12];
+	sub.u32 	%r49, %r48, %r35;
+	st.shared.s16 	[%r39+6], %r49;
+	ld.global.u16 	%r50, [%r41+16];
+	sub.u32 	%r51, %r50, %r35;
+	st.shared.s16 	[%r39+8], %r51;
+	ld.global.u16 	%r52, [%r41+20];
+	sub.u32 	%r53, %r52, %r35;
+	st.shared.s16 	[%r39+10], %r53;
+$Lt_2_62722:
+	.loc	15	495	0
+	bar.sync 	0;
+	setp.gt.u32 	%p3, %r13, %r16;
+	@!%p3 bra 	$Lt_2_63490;
+	.loc	15	525	0
+	mul.lo.u32 	%r54, %r14, 12;
+	add.u32 	%r55, %r5, %r54;
+	add.u32 	%r56, %r27, %r55;
+	ld.shared.s16 	%rh3, [%r56+0];
+	mul.wide.u16 	%r57, %rh3, 4;
+	add.u32 	%r58, %r5, %r57;
+	ld.shared.f32 	%f8, [%r58+0];
+	bra.uni 	$Lt_2_63234;
+$Lt_2_63490:
+	mov.f32 	%f8, 0f4b189680;     	// 1e+007
+$Lt_2_63234:
+	.loc	15	528	0
+	ld.shared.f32 	%f9, [%r28+0];
+	.loc	15	529	0
+	ld.shared.f32 	%f10, [%r28+4];
+	.loc	15	530	0
+	ld.shared.f32 	%f11, [%r28+8];
+	.loc	15	528	0
+	cvt.f64.f32 	%fd1, %f9;
+	mov.f64 	%fd2, 0d416312d000000000;	// 1e+007
+	setp.ge.f64 	%p4, %fd1, %fd2;
+	@!%p4 bra 	$Lt_2_94978;
+	.loc	15	529	0
+	ld.shared.f32 	%f10, [%r28+4];
+	.loc	15	528	0
+	cvt.f64.f32 	%fd3, %f10;
+	mov.f64 	%fd4, 0d416312d000000000;	// 1e+007
+	setp.ge.f64 	%p5, %fd3, %fd4;
+	@!%p5 bra 	$Lt_2_94978;
+	.loc	15	530	0
+	ld.shared.f32 	%f11, [%r28+8];
+	.loc	15	528	0
+	cvt.f64.f32 	%fd5, %f11;
+	mov.f64 	%fd6, 0d416312d000000000;	// 1e+007
+	setp.ge.f64 	%p6, %fd5, %fd6;
+	@%p6 bra 	$L_2_61442;
+$Lt_2_94978:
+$L_2_61698:
+	sub.f32 	%f12, %f11, %f10;
+	mul.f32 	%f13, %f1, %f1;
+	mad.f32 	%f14, %f1, %f2, %f10;
+	mad.f32 	%f15, %f1, %f4, %f11;
+	mul.f32 	%f16, %f12, %f12;
+	mul.f32 	%f17, %f13, %f3;
+	setp.lt.f32 	%p7, %f14, %f15;
+	mul.f32 	%f18, %f3, %f17;
+	sub.f32 	%f19, %f18, %f16;
+	mul.f32 	%f20, %f19, %f3;
+	mul.f32 	%f21, %f20, %f3;
+	mov.f32 	%f22, 0f00000000;    	// 0
+	setp.gt.f32 	%p8, %f21, %f22;
+	@!%p8 bra 	$Lt_2_64002;
+	.loc	19	4505	0
+	add.f32 	%f23, %f2, %f2;
+	add.f32 	%f24, %f3, %f3;
+	mov.f32 	%f25, 0f40800000;    	// 4
+	mul.f32 	%f26, %f2, %f25;
+	mul.f32 	%f27, %f3, %f3;
+	mul.f32 	%f28, %f23, %f3;
+	mul.f32 	%f29, %f24, %f2;
+	mul.f32 	%f30, %f26, %f2;
+	mad.f32 	%f31, %f2, %f2, %f27;
+	mul.f32 	%f32, %f17, %f3;
+	mul.f32 	%f33, %f4, %f4;
+	sub.f32 	%f34, %f31, %f33;
+	mul.f32 	%f35, %f12, %f12;
+	sub.f32 	%f36, %f35, %f32;
+	div.full.f32 	%f37, %f34, %f28;
+	mov.f32 	%f38, 0f3f800000;    	// 1
+	mul.f32 	%f39, %f37, %f37;
+	sub.f32 	%f40, %f38, %f39;
+	mul.f32 	%f41, %f29, %f37;
+	mul.f32 	%f42, %f30, %f21;
+	add.f32 	%f43, %f21, %f21;
+	mul.f32 	%f44, %f36, %f41;
+	mul.f32 	%f45, %f12, %f42;
+	mul.f32 	%f46, %f12, %f45;
+	mul.f32 	%f47, %f40, %f46;
+	sqrt.approx.f32 	%f48, %f47;
+	sub.f32 	%f49, %f48, %f44;
+	div.full.f32 	%f50, %f49, %f43;
+	.loc	15	581	0
+	add.f32 	%f51, %f44, %f48;
+	neg.f32 	%f52, %f51;
+	mov.f32 	%f53, 0f00000000;    	// 0
+	set.ge.u32.f32 	%r59, %f50, %f53;
+	neg.s32 	%r60, %r59;
+	mov.f32 	%f54, 0f3f800000;    	// 1
+	set.le.u32.f32 	%r61, %f50, %f54;
+	neg.s32 	%r62, %r61;
+	and.b32 	%r63, %r60, %r62;
+	mov.u32 	%r64, 0;
+	setp.eq.s32 	%p9, %r63, %r64;
+	@%p9 bra 	$Lt_2_64514;
+	.loc	15	589	0
+	mul.f32 	%f55, %f50, %f3;
+	mad.f32 	%f56, %f50, %f12, %f10;
+	mul.f32 	%f57, %f55, %f55;
+	mad.f32 	%f58, %f2, %f2, %f57;
+	mul.f32 	%f59, %f55, %f23;
+	mul.f32 	%f60, %f37, %f59;
+	sub.f32 	%f61, %f58, %f60;
+	sqrt.approx.f32 	%f62, %f61;
+	mad.f32 	%f63, %f1, %f62, %f56;
+	bra.uni 	$Lt_2_64258;
+$Lt_2_64514:
+	mov.f32 	%f63, 0f4b189680;    	// 1e+007
+$Lt_2_64258:
+	div.full.f32 	%f64, %f52, %f43;
+	mov.f32 	%f65, 0f00000000;    	// 0
+	set.ge.u32.f32 	%r65, %f64, %f65;
+	neg.s32 	%r66, %r65;
+	mov.f32 	%f66, 0f3f800000;    	// 1
+	set.le.u32.f32 	%r67, %f64, %f66;
+	neg.s32 	%r68, %r67;
+	and.b32 	%r69, %r66, %r68;
+	mov.u32 	%r70, 0;
+	setp.eq.s32 	%p10, %r69, %r70;
+	@%p10 bra 	$Lt_2_65026;
+	.loc	15	596	0
+	mul.f32 	%f67, %f64, %f3;
+	mul.f32 	%f68, %f67, %f67;
+	mad.f32 	%f69, %f2, %f2, %f68;
+	mul.f32 	%f70, %f67, %f23;
+	mul.f32 	%f71, %f37, %f70;
+	sub.f32 	%f72, %f69, %f71;
+	sqrt.approx.f32 	%f73, %f72;
+	.loc	15	598	0
+	mad.f32 	%f74, %f12, %f64, %f10;
+	mad.f32 	%f75, %f1, %f73, %f74;
+	bra.uni 	$Lt_2_64770;
+$Lt_2_65026:
+	mov.f32 	%f75, 0f4b189680;    	// 1e+007
+$Lt_2_64770:
+	@!%p7 bra 	$Lt_2_65538;
+	.loc	15	603	0
+	setp.gt.f32 	%p11, %f14, %f63;
+	selp.s32 	%r71, 0, 1, %p11;
+	bra.uni 	$Lt_2_65282;
+$Lt_2_65538:
+	setp.gt.f32 	%p12, %f15, %f63;
+	selp.s32 	%r71, 0, 1, %p12;
+$Lt_2_65282:
+	mov.u32 	%r72, 0;
+	setp.eq.s32 	%p13, %r71, %r72;
+	@%p13 bra 	$Lt_2_66050;
+	@!%p7 bra 	$Lt_2_66562;
+	setp.gt.f32 	%p14, %f14, %f75;
+	selp.s32 	%r73, 0, 1, %p14;
+	bra.uni 	$Lt_2_66306;
+$Lt_2_66562:
+	setp.gt.f32 	%p15, %f15, %f75;
+	selp.s32 	%r73, 0, 1, %p15;
+$Lt_2_66306:
+	mov.s32 	%r74, %r73;
+	bra.uni 	$Lt_2_65794;
+$Lt_2_66050:
+	setp.lt.f32 	%p16, %f75, %f63;
+	selp.s32 	%r74, 0, 1, %p16;
+$Lt_2_65794:
+	mov.u32 	%r75, 0;
+	setp.eq.s32 	%p17, %r74, %r75;
+	@%p17 bra 	$Lt_2_67074;
+	@!%p7 bra 	$Lt_2_67586;
+	setp.gt.f32 	%p18, %f14, %f63;
+	selp.s32 	%r76, 0, 1, %p18;
+	bra.uni 	$Lt_2_67330;
+$Lt_2_67586:
+	setp.gt.f32 	%p19, %f15, %f63;
+	selp.s32 	%r76, 0, 1, %p19;
+$Lt_2_67330:
+	mov.u32 	%r77, 0;
+	setp.eq.s32 	%p20, %r76, %r77;
+	@%p20 bra 	$Lt_2_68098;
+	@!%p7 bra 	$Lt_2_68610;
+	setp.gt.f32 	%p21, %f14, %f9;
+	selp.s32 	%r78, 0, 1, %p21;
+	bra.uni 	$Lt_2_68354;
+$Lt_2_68610:
+	setp.gt.f32 	%p22, %f15, %f9;
+	selp.s32 	%r78, 0, 1, %p22;
+$Lt_2_68354:
+	mov.s32 	%r79, %r78;
+	bra.uni 	$Lt_2_67842;
+$Lt_2_68098:
+	setp.lt.f32 	%p23, %f9, %f63;
+	selp.s32 	%r79, 0, 1, %p23;
+$Lt_2_67842:
+	mov.s32 	%r80, %r79;
+	bra.uni 	$Lt_2_66818;
+$Lt_2_67074:
+	setp.lt.f32 	%p24, %f9, %f75;
+	selp.s32 	%r80, 0, 1, %p24;
+$Lt_2_66818:
+	mov.u32 	%r81, 0;
+	setp.eq.s32 	%p25, %r80, %r81;
+	@%p25 bra 	$Lt_2_69122;
+	@!%p7 bra 	$Lt_2_69634;
+	setp.gt.f32 	%p26, %f14, %f63;
+	selp.s32 	%r82, 0, 1, %p26;
+	bra.uni 	$Lt_2_69378;
+$Lt_2_69634:
+	setp.gt.f32 	%p27, %f15, %f63;
+	selp.s32 	%r82, 0, 1, %p27;
+$Lt_2_69378:
+	mov.u32 	%r83, 0;
+	setp.eq.s32 	%p28, %r82, %r83;
+	@%p28 bra 	$Lt_2_70146;
+	@!%p7 bra 	$Lt_2_70658;
+	setp.gt.f32 	%p29, %f14, %f75;
+	selp.s32 	%r84, 0, 1, %p29;
+	bra.uni 	$Lt_2_70402;
+$Lt_2_70658:
+	setp.gt.f32 	%p30, %f15, %f75;
+	selp.s32 	%r84, 0, 1, %p30;
+$Lt_2_70402:
+	mov.s32 	%r85, %r84;
+	bra.uni 	$Lt_2_69890;
+$Lt_2_70146:
+	setp.lt.f32 	%p31, %f75, %f63;
+	selp.s32 	%r85, 0, 1, %p31;
+$Lt_2_69890:
+	mov.u32 	%r86, 0;
+	setp.eq.s32 	%p32, %r85, %r86;
+	@%p32 bra 	$Lt_2_71170;
+	@!%p7 bra 	$Lt_2_71682;
+	setp.gt.f32 	%p33, %f14, %f63;
+	selp.s32 	%r87, 0, 1, %p33;
+	bra.uni 	$Lt_2_71426;
+$Lt_2_71682:
+	setp.gt.f32 	%p34, %f15, %f63;
+	selp.s32 	%r87, 0, 1, %p34;
+$Lt_2_71426:
+	mov.u32 	%r88, 0;
+	setp.eq.s32 	%p35, %r87, %r88;
+	@%p35 bra 	$Lt_2_72194;
+	min.f32 	%f76, %f14, %f15;
+	bra.uni 	$Lt_2_71938;
+$Lt_2_72194:
+	mov.f32 	%f76, %f63;
+$Lt_2_71938:
+	mov.f32 	%f77, %f76;
+	bra.uni 	$Lt_2_70914;
+$Lt_2_71170:
+	mov.f32 	%f77, %f75;
+$Lt_2_70914:
+	mov.f32 	%f78, %f77;
+	bra.uni 	$Lt_2_68866;
+$Lt_2_69122:
+	mov.f32 	%f78, %f9;
+$Lt_2_68866:
+	mov.f32 	%f79, %f78;
+	bra.uni 	$Lt_2_63746;
+$Lt_2_64002:
+	@!%p7 bra 	$Lt_2_72706;
+	.loc	15	609	0
+	setp.gt.f32 	%p36, %f14, %f9;
+	selp.s32 	%r89, 0, 1, %p36;
+	bra.uni 	$Lt_2_72450;
+$Lt_2_72706:
+	setp.gt.f32 	%p37, %f15, %f9;
+	selp.s32 	%r89, 0, 1, %p37;
+$Lt_2_72450:
+	mov.u32 	%r90, 0;
+	setp.eq.s32 	%p38, %r89, %r90;
+	@%p38 bra 	$Lt_2_73218;
+	min.f32 	%f80, %f14, %f15;
+	bra.uni 	$Lt_2_72962;
+$Lt_2_73218:
+	mov.f32 	%f80, %f9;
+$Lt_2_72962:
+	mov.f32 	%f79, %f80;
+$Lt_2_63746:
+	.loc	15	613	0
+	st.shared.f32 	[%r28+0], %f79;
+	sub.f32 	%f81, %f9, %f11;
+	mad.f32 	%f82, %f1, %f2, %f9;
+	mad.f32 	%f83, %f1, %f3, %f11;
+	mul.f32 	%f84, %f13, %f4;
+	mul.f32 	%f85, %f81, %f81;
+	setp.gt.f32 	%p39, %f82, %f83;
+	mul.f32 	%f86, %f4, %f84;
+	sub.f32 	%f87, %f86, %f85;
+	mul.f32 	%f88, %f87, %f4;
+	mul.f32 	%f89, %f88, %f4;
+	mov.f32 	%f90, 0f00000000;    	// 0
+	setp.gt.f32 	%p40, %f89, %f90;
+	@!%p40 bra 	$Lt_2_73730;
+	.loc	19	4505	0
+	mul.f32 	%f91, %f4, %f4;
+	add.f32 	%f92, %f4, %f4;
+	mov.f32 	%f93, 0f40800000;    	// 4
+	mul.f32 	%f94, %f3, %f93;
+	add.f32 	%f24, %f3, %f3;
+	mad.f32 	%f95, %f3, %f3, %f91;
+	mul.f32 	%f96, %f92, %f3;
+	mul.f32 	%f97, %f94, %f3;
+	mul.f32 	%f98, %f24, %f4;
+	mul.f32 	%f99, %f84, %f4;
+	mul.f32 	%f100, %f2, %f2;
+	sub.f32 	%f101, %f95, %f100;
+	mul.f32 	%f102, %f81, %f81;
+	sub.f32 	%f103, %f102, %f99;
+	div.full.f32 	%f104, %f101, %f98;
+	mov.f32 	%f105, 0f3f800000;   	// 1
+	mul.f32 	%f106, %f104, %f104;
+	sub.f32 	%f107, %f105, %f106;
+	mul.f32 	%f108, %f96, %f104;
+	mul.f32 	%f109, %f97, %f89;
+	add.f32 	%f110, %f89, %f89;
+	mul.f32 	%f111, %f103, %f108;
+	mul.f32 	%f112, %f81, %f109;
+	mul.f32 	%f113, %f81, %f112;
+	mul.f32 	%f114, %f107, %f113;
+	sqrt.approx.f32 	%f115, %f114;
+	sub.f32 	%f116, %f115, %f111;
+	div.full.f32 	%f50, %f116, %f110;
+	.loc	15	656	0
+	add.f32 	%f117, %f111, %f115;
+	neg.f32 	%f118, %f117;
+	mov.f32 	%f119, 0f00000000;   	// 0
+	set.ge.u32.f32 	%r91, %f50, %f119;
+	neg.s32 	%r92, %r91;
+	mov.f32 	%f120, 0f3f800000;   	// 1
+	set.le.u32.f32 	%r93, %f50, %f120;
+	neg.s32 	%r94, %r93;
+	and.b32 	%r95, %r92, %r94;
+	mov.u32 	%r96, 0;
+	setp.eq.s32 	%p41, %r95, %r96;
+	@%p41 bra 	$Lt_2_74242;
+	.loc	15	664	0
+	mul.f32 	%f121, %f50, %f4;
+	mad.f32 	%f122, %f50, %f81, %f11;
+	mul.f32 	%f123, %f121, %f121;
+	mad.f32 	%f124, %f3, %f3, %f123;
+	mul.f32 	%f125, %f121, %f24;
+	mul.f32 	%f126, %f104, %f125;
+	sub.f32 	%f127, %f124, %f126;
+	sqrt.approx.f32 	%f128, %f127;
+	mad.f32 	%f63, %f1, %f128, %f122;
+	bra.uni 	$Lt_2_73986;
+$Lt_2_74242:
+	mov.f32 	%f63, 0f4b189680;    	// 1e+007
+$Lt_2_73986:
+	div.full.f32 	%f129, %f118, %f110;
+	mov.f32 	%f130, 0f00000000;   	// 0
+	set.ge.u32.f32 	%r97, %f129, %f130;
+	neg.s32 	%r98, %r97;
+	mov.f32 	%f131, 0f3f800000;   	// 1
+	set.le.u32.f32 	%r99, %f129, %f131;
+	neg.s32 	%r100, %r99;
+	and.b32 	%r101, %r98, %r100;
+	mov.u32 	%r102, 0;
+	setp.eq.s32 	%p42, %r101, %r102;
+	@%p42 bra 	$Lt_2_74754;
+	.loc	15	671	0
+	mul.f32 	%f132, %f129, %f4;
+	mul.f32 	%f133, %f132, %f132;
+	mad.f32 	%f134, %f3, %f3, %f133;
+	mul.f32 	%f135, %f132, %f24;
+	mul.f32 	%f136, %f104, %f135;
+	sub.f32 	%f137, %f134, %f136;
+	sqrt.approx.f32 	%f138, %f137;
+	.loc	15	673	0
+	mad.f32 	%f139, %f81, %f129, %f11;
+	mad.f32 	%f75, %f1, %f138, %f139;
+	bra.uni 	$Lt_2_74498;
+$Lt_2_74754:
+	mov.f32 	%f75, 0f4b189680;    	// 1e+007
+$Lt_2_74498:
+	@!%p39 bra 	$Lt_2_75266;
+	.loc	15	678	0
+	setp.gt.f32 	%p43, %f83, %f63;
+	selp.s32 	%r103, 0, 1, %p43;
+	bra.uni 	$Lt_2_75010;
+$Lt_2_75266:
+	setp.gt.f32 	%p44, %f82, %f63;
+	selp.s32 	%r103, 0, 1, %p44;
+$Lt_2_75010:
+	mov.u32 	%r104, 0;
+	setp.eq.s32 	%p45, %r103, %r104;
+	@%p45 bra 	$Lt_2_75778;
+	@!%p39 bra 	$Lt_2_76290;
+	setp.gt.f32 	%p46, %f83, %f75;
+	selp.s32 	%r105, 0, 1, %p46;
+	bra.uni 	$Lt_2_76034;
+$Lt_2_76290:
+	setp.gt.f32 	%p47, %f82, %f75;
+	selp.s32 	%r105, 0, 1, %p47;
+$Lt_2_76034:
+	mov.s32 	%r106, %r105;
+	bra.uni 	$Lt_2_75522;
+$Lt_2_75778:
+	setp.lt.f32 	%p48, %f75, %f63;
+	selp.s32 	%r106, 0, 1, %p48;
+$Lt_2_75522:
+	mov.u32 	%r107, 0;
+	setp.eq.s32 	%p49, %r106, %r107;
+	@%p49 bra 	$Lt_2_76802;
+	@!%p39 bra 	$Lt_2_77314;
+	setp.gt.f32 	%p50, %f83, %f63;
+	selp.s32 	%r108, 0, 1, %p50;
+	bra.uni 	$Lt_2_77058;
+$Lt_2_77314:
+	setp.gt.f32 	%p51, %f82, %f63;
+	selp.s32 	%r108, 0, 1, %p51;
+$Lt_2_77058:
+	mov.u32 	%r109, 0;
+	setp.eq.s32 	%p52, %r108, %r109;
+	@%p52 bra 	$Lt_2_77826;
+	@!%p39 bra 	$Lt_2_78338;
+	setp.gt.f32 	%p53, %f83, %f10;
+	selp.s32 	%r110, 0, 1, %p53;
+	bra.uni 	$Lt_2_78082;
+$Lt_2_78338:
+	setp.gt.f32 	%p54, %f82, %f10;
+	selp.s32 	%r110, 0, 1, %p54;
+$Lt_2_78082:
+	mov.s32 	%r111, %r110;
+	bra.uni 	$Lt_2_77570;
+$Lt_2_77826:
+	setp.lt.f32 	%p55, %f10, %f63;
+	selp.s32 	%r111, 0, 1, %p55;
+$Lt_2_77570:
+	mov.s32 	%r112, %r111;
+	bra.uni 	$Lt_2_76546;
+$Lt_2_76802:
+	setp.lt.f32 	%p56, %f10, %f75;
+	selp.s32 	%r112, 0, 1, %p56;
+$Lt_2_76546:
+	mov.u32 	%r113, 0;
+	setp.eq.s32 	%p57, %r112, %r113;
+	@%p57 bra 	$Lt_2_78850;
+	@!%p39 bra 	$Lt_2_79362;
+	setp.gt.f32 	%p58, %f83, %f63;
+	selp.s32 	%r114, 0, 1, %p58;
+	bra.uni 	$Lt_2_79106;
+$Lt_2_79362:
+	setp.gt.f32 	%p59, %f82, %f63;
+	selp.s32 	%r114, 0, 1, %p59;
+$Lt_2_79106:
+	mov.u32 	%r115, 0;
+	setp.eq.s32 	%p60, %r114, %r115;
+	@%p60 bra 	$Lt_2_79874;
+	@!%p39 bra 	$Lt_2_80386;
+	setp.gt.f32 	%p61, %f83, %f75;
+	selp.s32 	%r116, 0, 1, %p61;
+	bra.uni 	$Lt_2_80130;
+$Lt_2_80386:
+	setp.gt.f32 	%p62, %f82, %f75;
+	selp.s32 	%r116, 0, 1, %p62;
+$Lt_2_80130:
+	mov.s32 	%r117, %r116;
+	bra.uni 	$Lt_2_79618;
+$Lt_2_79874:
+	setp.lt.f32 	%p63, %f75, %f63;
+	selp.s32 	%r117, 0, 1, %p63;
+$Lt_2_79618:
+	mov.u32 	%r118, 0;
+	setp.eq.s32 	%p64, %r117, %r118;
+	@%p64 bra 	$Lt_2_80898;
+	@!%p39 bra 	$Lt_2_81410;
+	setp.gt.f32 	%p65, %f83, %f63;
+	selp.s32 	%r119, 0, 1, %p65;
+	bra.uni 	$Lt_2_81154;
+$Lt_2_81410:
+	setp.gt.f32 	%p66, %f82, %f63;
+	selp.s32 	%r119, 0, 1, %p66;
+$Lt_2_81154:
+	mov.u32 	%r120, 0;
+	setp.eq.s32 	%p67, %r119, %r120;
+	@%p67 bra 	$Lt_2_81922;
+	min.f32 	%f140, %f82, %f83;
+	bra.uni 	$Lt_2_81666;
+$Lt_2_81922:
+	mov.f32 	%f140, %f63;
+$Lt_2_81666:
+	mov.f32 	%f141, %f140;
+	bra.uni 	$Lt_2_80642;
+$Lt_2_80898:
+	mov.f32 	%f141, %f75;
+$Lt_2_80642:
+	mov.f32 	%f142, %f141;
+	bra.uni 	$Lt_2_78594;
+$Lt_2_78850:
+	mov.f32 	%f142, %f10;
+$Lt_2_78594:
+	mov.f32 	%f79, %f142;
+	bra.uni 	$Lt_2_73474;
+$Lt_2_73730:
+	@!%p39 bra 	$Lt_2_82434;
+	.loc	15	684	0
+	setp.gt.f32 	%p68, %f83, %f10;
+	selp.s32 	%r121, 0, 1, %p68;
+	bra.uni 	$Lt_2_82178;
+$Lt_2_82434:
+	setp.gt.f32 	%p69, %f82, %f10;
+	selp.s32 	%r121, 0, 1, %p69;
+$Lt_2_82178:
+	mov.u32 	%r122, 0;
+	setp.eq.s32 	%p70, %r121, %r122;
+	@%p70 bra 	$Lt_2_82946;
+	min.f32 	%f143, %f82, %f83;
+	bra.uni 	$Lt_2_82690;
+$Lt_2_82946:
+	mov.f32 	%f143, %f10;
+$Lt_2_82690:
+	mov.f32 	%f79, %f143;
+$Lt_2_73474:
+	.loc	15	688	0
+	st.shared.f32 	[%r28+4], %f79;
+	sub.f32 	%f144, %f10, %f9;
+	mad.f32 	%f145, %f1, %f4, %f9;
+	mad.f32 	%f146, %f1, %f3, %f10;
+	mul.f32 	%f147, %f13, %f2;
+	mul.f32 	%f148, %f144, %f144;
+	setp.lt.f32 	%p71, %f145, %f146;
+	mul.f32 	%f149, %f2, %f147;
+	sub.f32 	%f150, %f149, %f148;
+	mul.f32 	%f151, %f150, %f2;
+	mul.f32 	%f152, %f151, %f2;
+	mov.f32 	%f153, 0f00000000;   	// 0
+	setp.gt.f32 	%p72, %f152, %f153;
+	@!%p72 bra 	$Lt_2_83458;
+	.loc	19	4505	0
+	mov.f32 	%f154, 0f40800000;   	// 4
+	mul.f32 	%f155, %f4, %f154;
+	mul.f32 	%f156, %f4, %f4;
+	add.f32 	%f92, %f4, %f4;
+	add.f32 	%f157, %f2, %f2;
+	mul.f32 	%f158, %f155, %f4;
+	mad.f32 	%f159, %f2, %f2, %f156;
+	mul.f32 	%f160, %f92, %f2;
+	mul.f32 	%f161, %f157, %f4;
+	mul.f32 	%f162, %f147, %f2;
+	mul.f32 	%f163, %f3, %f3;
+	sub.f32 	%f164, %f159, %f163;
+	mul.f32 	%f165, %f144, %f144;
+	sub.f32 	%f166, %f165, %f162;
+	div.full.f32 	%f167, %f164, %f160;
+	mov.f32 	%f168, 0f3f800000;   	// 1
+	mul.f32 	%f169, %f167, %f167;
+	sub.f32 	%f170, %f168, %f169;
+	mul.f32 	%f171, %f161, %f167;
+	mul.f32 	%f172, %f158, %f152;
+	add.f32 	%f173, %f152, %f152;
+	mul.f32 	%f174, %f166, %f171;
+	mul.f32 	%f175, %f144, %f172;
+	mul.f32 	%f176, %f144, %f175;
+	mul.f32 	%f177, %f170, %f176;
+	sqrt.approx.f32 	%f178, %f177;
+	sub.f32 	%f179, %f178, %f174;
+	div.full.f32 	%f50, %f179, %f173;
+	.loc	15	734	0
+	add.f32 	%f180, %f174, %f178;
+	neg.f32 	%f181, %f180;
+	mov.f32 	%f182, 0f00000000;   	// 0
+	set.ge.u32.f32 	%r123, %f50, %f182;
+	neg.s32 	%r124, %r123;
+	mov.f32 	%f183, 0f3f800000;   	// 1
+	set.le.u32.f32 	%r125, %f50, %f183;
+	neg.s32 	%r126, %r125;
+	and.b32 	%r127, %r124, %r126;
+	mov.u32 	%r128, 0;
+	setp.eq.s32 	%p73, %r127, %r128;
+	@%p73 bra 	$Lt_2_83970;
+	.loc	15	742	0
+	mul.f32 	%f184, %f50, %f2;
+	mad.f32 	%f185, %f50, %f144, %f9;
+	mul.f32 	%f186, %f184, %f184;
+	mad.f32 	%f187, %f4, %f4, %f186;
+	mul.f32 	%f188, %f184, %f92;
+	mul.f32 	%f189, %f167, %f188;
+	sub.f32 	%f190, %f187, %f189;
+	sqrt.approx.f32 	%f191, %f190;
+	mad.f32 	%f63, %f1, %f191, %f185;
+	bra.uni 	$Lt_2_83714;
+$Lt_2_83970:
+	mov.f32 	%f63, 0f4b189680;    	// 1e+007
+$Lt_2_83714:
+	div.full.f32 	%f192, %f181, %f173;
+	mov.f32 	%f193, 0f00000000;   	// 0
+	set.ge.u32.f32 	%r129, %f192, %f193;
+	neg.s32 	%r130, %r129;
+	mov.f32 	%f194, 0f3f800000;   	// 1
+	set.le.u32.f32 	%r131, %f192, %f194;
+	neg.s32 	%r132, %r131;
+	and.b32 	%r133, %r130, %r132;
+	mov.u32 	%r134, 0;
+	setp.eq.s32 	%p74, %r133, %r134;
+	@%p74 bra 	$Lt_2_84482;
+	.loc	15	749	0
+	mul.f32 	%f195, %f192, %f2;
+	mul.f32 	%f196, %f195, %f195;
+	mad.f32 	%f197, %f4, %f4, %f196;
+	mul.f32 	%f198, %f195, %f92;
+	mul.f32 	%f199, %f167, %f198;
+	sub.f32 	%f200, %f197, %f199;
+	sqrt.approx.f32 	%f201, %f200;
+	.loc	15	751	0
+	mad.f32 	%f202, %f144, %f192, %f9;
+	mad.f32 	%f75, %f1, %f201, %f202;
+	bra.uni 	$Lt_2_84226;
+$Lt_2_84482:
+	mov.f32 	%f75, 0f4b189680;    	// 1e+007
+$Lt_2_84226:
+	@!%p71 bra 	$Lt_2_84994;
+	.loc	15	756	0
+	setp.gt.f32 	%p75, %f145, %f63;
+	selp.s32 	%r135, 0, 1, %p75;
+	bra.uni 	$Lt_2_84738;
+$Lt_2_84994:
+	setp.gt.f32 	%p76, %f146, %f63;
+	selp.s32 	%r135, 0, 1, %p76;
+$Lt_2_84738:
+	mov.u32 	%r136, 0;
+	setp.eq.s32 	%p77, %r135, %r136;
+	@%p77 bra 	$Lt_2_85506;
+	@!%p71 bra 	$Lt_2_86018;
+	setp.gt.f32 	%p78, %f145, %f75;
+	selp.s32 	%r137, 0, 1, %p78;
+	bra.uni 	$Lt_2_85762;
+$Lt_2_86018:
+	setp.gt.f32 	%p79, %f146, %f75;
+	selp.s32 	%r137, 0, 1, %p79;
+$Lt_2_85762:
+	mov.s32 	%r138, %r137;
+	bra.uni 	$Lt_2_85250;
+$Lt_2_85506:
+	setp.lt.f32 	%p80, %f75, %f63;
+	selp.s32 	%r138, 0, 1, %p80;
+$Lt_2_85250:
+	mov.u32 	%r139, 0;
+	setp.eq.s32 	%p81, %r138, %r139;
+	@%p81 bra 	$Lt_2_86530;
+	@!%p71 bra 	$Lt_2_87042;
+	setp.gt.f32 	%p82, %f145, %f63;
+	selp.s32 	%r140, 0, 1, %p82;
+	bra.uni 	$Lt_2_86786;
+$Lt_2_87042:
+	setp.gt.f32 	%p83, %f146, %f63;
+	selp.s32 	%r140, 0, 1, %p83;
+$Lt_2_86786:
+	mov.u32 	%r141, 0;
+	setp.eq.s32 	%p84, %r140, %r141;
+	@%p84 bra 	$Lt_2_87554;
+	@!%p71 bra 	$Lt_2_88066;
+	setp.gt.f32 	%p85, %f145, %f11;
+	selp.s32 	%r142, 0, 1, %p85;
+	bra.uni 	$Lt_2_87810;
+$Lt_2_88066:
+	setp.gt.f32 	%p86, %f146, %f11;
+	selp.s32 	%r142, 0, 1, %p86;
+$Lt_2_87810:
+	mov.s32 	%r143, %r142;
+	bra.uni 	$Lt_2_87298;
+$Lt_2_87554:
+	setp.lt.f32 	%p87, %f11, %f63;
+	selp.s32 	%r143, 0, 1, %p87;
+$Lt_2_87298:
+	mov.s32 	%r144, %r143;
+	bra.uni 	$Lt_2_86274;
+$Lt_2_86530:
+	setp.lt.f32 	%p88, %f11, %f75;
+	selp.s32 	%r144, 0, 1, %p88;
+$Lt_2_86274:
+	mov.u32 	%r145, 0;
+	setp.eq.s32 	%p89, %r144, %r145;
+	@%p89 bra 	$Lt_2_88578;
+	@!%p71 bra 	$Lt_2_89090;
+	setp.gt.f32 	%p90, %f145, %f63;
+	selp.s32 	%r146, 0, 1, %p90;
+	bra.uni 	$Lt_2_88834;
+$Lt_2_89090:
+	setp.gt.f32 	%p91, %f146, %f63;
+	selp.s32 	%r146, 0, 1, %p91;
+$Lt_2_88834:
+	mov.u32 	%r147, 0;
+	setp.eq.s32 	%p92, %r146, %r147;
+	@%p92 bra 	$Lt_2_89602;
+	@!%p71 bra 	$Lt_2_90114;
+	setp.gt.f32 	%p93, %f145, %f75;
+	selp.s32 	%r148, 0, 1, %p93;
+	bra.uni 	$Lt_2_89858;
+$Lt_2_90114:
+	setp.gt.f32 	%p94, %f146, %f75;
+	selp.s32 	%r148, 0, 1, %p94;
+$Lt_2_89858:
+	mov.s32 	%r149, %r148;
+	bra.uni 	$Lt_2_89346;
+$Lt_2_89602:
+	setp.lt.f32 	%p95, %f75, %f63;
+	selp.s32 	%r149, 0, 1, %p95;
+$Lt_2_89346:
+	mov.u32 	%r150, 0;
+	setp.eq.s32 	%p96, %r149, %r150;
+	@%p96 bra 	$Lt_2_90626;
+	@!%p71 bra 	$Lt_2_91138;
+	setp.gt.f32 	%p97, %f145, %f63;
+	selp.s32 	%r151, 0, 1, %p97;
+	bra.uni 	$Lt_2_90882;
+$Lt_2_91138:
+	setp.gt.f32 	%p98, %f146, %f63;
+	selp.s32 	%r151, 0, 1, %p98;
+$Lt_2_90882:
+	mov.u32 	%r152, 0;
+	setp.eq.s32 	%p99, %r151, %r152;
+	@%p99 bra 	$Lt_2_91650;
+	min.f32 	%f203, %f145, %f146;
+	bra.uni 	$Lt_2_91394;
+$Lt_2_91650:
+	mov.f32 	%f203, %f63;
+$Lt_2_91394:
+	mov.f32 	%f204, %f203;
+	bra.uni 	$Lt_2_90370;
+$Lt_2_90626:
+	mov.f32 	%f204, %f75;
+$Lt_2_90370:
+	mov.f32 	%f205, %f204;
+	bra.uni 	$Lt_2_88322;
+$Lt_2_88578:
+	mov.f32 	%f205, %f11;
+$Lt_2_88322:
+	mov.f32 	%f79, %f205;
+	bra.uni 	$Lt_2_83202;
+$Lt_2_83458:
+	@!%p71 bra 	$Lt_2_92162;
+	.loc	15	762	0
+	setp.gt.f32 	%p100, %f145, %f11;
+	selp.s32 	%r153, 0, 1, %p100;
+	bra.uni 	$Lt_2_91906;
+$Lt_2_92162:
+	setp.gt.f32 	%p101, %f146, %f11;
+	selp.s32 	%r153, 0, 1, %p101;
+$Lt_2_91906:
+	mov.u32 	%r154, 0;
+	setp.eq.s32 	%p102, %r153, %r154;
+	@%p102 bra 	$Lt_2_92674;
+	min.f32 	%f206, %f145, %f146;
+	bra.uni 	$Lt_2_92418;
+$Lt_2_92674:
+	mov.f32 	%f206, %f11;
+$Lt_2_92418:
+	mov.f32 	%f79, %f206;
+$Lt_2_83202:
+	.loc	15	766	0
+	st.shared.f32 	[%r28+8], %f79;
+$L_2_61442:
+	.loc	15	770	0
+	bar.sync 	0;
+	@!%p3 bra 	$Lt_2_93186;
+	.loc	15	782	0
+	mov.s32 	%r155, 0;
+	mov.f32 	%f79, 0f4b189680;    	// 1e+007
+$Lt_2_38402:
+ //<loop> Loop body line 782
+	mov.u32 	%r156, 5;
+	setp.gt.s32 	%p103, %r155, %r156;
+	@%p103 bra 	$Lt_2_95746;
+ //<loop> Part of loop body line 782, head labeled $Lt_2_38402
+	mul.lo.u32 	%r157, %r14, 12;
+	add.u32 	%r158, %r5, %r157;
+	mul24.lo.u32 	%r159, %r16, 6;
+	add.u32 	%r160, %r155, %r159;
+	mul.lo.u32 	%r161, %r160, 2;
+	add.u32 	%r162, %r158, %r161;
+	ld.shared.s16 	%r163, [%r162+0];
+	mov.u32 	%r164, -1;
+	setp.le.s32 	%p104, %r163, %r164;
+	@%p104 bra 	$Lt_2_95746;
+ //<loop> Part of loop body line 782, head labeled $Lt_2_38402
+	ld.shared.s16 	%r163, [%r162+0];
+	mul24.lo.u32 	%r165, %r163, 4;
+	add.u32 	%r166, %r165, %r5;
+	ld.shared.f32 	%f207, [%r166+0];
+	setp.gt.f32 	%p105, %f207, %f79;
+	@!%p105 bra 	$Lt_2_93698;
+ //<loop> Part of loop body line 782, head labeled $Lt_2_38402
+	.loc	15	785	0
+	mov.f32 	%f208, %f79;
+	bra.uni 	$Lt_2_93442;
+$Lt_2_93698:
+ //<loop> Part of loop body line 782, head labeled $Lt_2_38402
+	.loc	15	782	0
+	ld.shared.f32 	%f207, [%r166+0];
+	.loc	15	785	0
+	mov.f32 	%f208, %f207;
+$Lt_2_93442:
+ //<loop> Part of loop body line 782, head labeled $Lt_2_38402
+	mov.f32 	%f79, %f208;
+	.loc	15	782	0
+	add.s32 	%r155, %r155, 1;
+	bra.uni 	$Lt_2_38402;
+$Lt_2_95746:
+$Lt_2_37890:
+	.loc	15	789	0
+	mov.f32 	%f209, %f79;
+	.loc	15	791	0
+	mov.s32 	%r167, 0;
+$Lt_2_39426:
+ //<loop> Loop body line 791
+	mov.u32 	%r168, 5;
+	setp.gt.s32 	%p106, %r167, %r168;
+	@%p106 bra 	$Lt_2_92930;
+ //<loop> Part of loop body line 791, head labeled $Lt_2_39426
+	mul.lo.u32 	%r169, %r14, 12;
+	add.u32 	%r170, %r5, %r169;
+	mul24.lo.u32 	%r171, %r16, 6;
+	add.u32 	%r172, %r167, %r171;
+	mul.lo.u32 	%r173, %r172, 2;
+	add.u32 	%r174, %r170, %r173;
+	ld.shared.s16 	%r163, [%r174+0];
+	mov.u32 	%r175, -1;
+	setp.le.s32 	%p107, %r163, %r175;
+	@%p107 bra 	$Lt_2_92930;
+ //<loop> Part of loop body line 791, head labeled $Lt_2_39426
+	ld.shared.s16 	%r163, [%r174+0];
+	.loc	15	793	0
+	mul24.lo.u32 	%r176, %r163, 4;
+	add.u32 	%r177, %r5, %r176;
+	st.shared.f32 	[%r177+0], %f79;
+	.loc	15	791	0
+	add.s32 	%r167, %r167, 1;
+	bra.uni 	$Lt_2_39426;
+$Lt_2_93186:
+	mov.f32 	%f209, 0f4b189680;   	// 1e+007
+$Lt_2_92930:
+	.loc	15	803	0
+	bar.sync 	0;
+	@!%p3 bra 	$Lt_2_94210;
+	.loc	15	811	0
+	sub.f32 	%f210, %f8, %f209;
+	mov.f32 	%f211, 0f358637bd;   	// 1e-006
+	set.lt.u32.f32 	%r178, %f210, %f211;
+	neg.s32 	%r179, %r178;
+	ld.param.u32 	%r180, [__cudaparm__Z18run_check_neighborPfS_PiS0_S_S_S_S_S0_S0_S0_iiiii_d_con];
+	mul.lo.u32 	%r181, %r9, 64;
+	add.u32 	%r182, %r16, %r181;
+	mul.lo.u32 	%r183, %r182, 4;
+	add.u32 	%r184, %r180, %r183;
+	st.global.s32 	[%r184+0], %r179;
+	.loc	15	813	0
+	mov.s32 	%r185, 0;
+$Lt_2_40962:
+ //<loop> Loop body line 813
+	mov.u32 	%r186, 5;
+	setp.gt.s32 	%p108, %r185, %r186;
+	@%p108 bra 	$Lt_2_96770;
+ //<loop> Part of loop body line 813, head labeled $Lt_2_40962
+	mul.lo.u32 	%r187, %r14, 12;
+	add.u32 	%r188, %r5, %r187;
+	mul24.lo.u32 	%r189, %r16, 6;
+	add.u32 	%r190, %r185, %r189;
+	mul.lo.u32 	%r191, %r190, 2;
+	add.u32 	%r192, %r188, %r191;
+	ld.shared.s16 	%r193, [%r192+0];
+	mov.u32 	%r194, -1;
+	setp.le.s32 	%p109, %r193, %r194;
+	@%p109 bra 	$Lt_2_96770;
+ //<loop> Part of loop body line 813, head labeled $Lt_2_40962
+	.loc	15	816	0
+	ld.param.u32 	%r195, [__cudaparm__Z18run_check_neighborPfS_PiS0_S_S_S_S_S0_S0_S0_iiiii_d_triMemOut];
+	mul.lo.u32 	%r196, %r15, 3;
+	.loc	15	813	0
+	ld.shared.s16 	%r193, [%r192+0];
+	.loc	15	816	0
+	add.u32 	%r197, %r193, %r196;
+	mul.lo.u32 	%r198, %r197, 4;
+	add.u32 	%r199, %r195, %r198;
+	st.global.f32 	[%r199+0], %f209;
+	.loc	15	813	0
+	add.s32 	%r185, %r185, 1;
+	bra.uni 	$Lt_2_40962;
+$Lt_2_96770:
+$Lt_2_40450:
+	.loc	15	819	0
+	mov.s32 	%r200, 0;
+$Lt_2_41986:
+ //<loop> Loop body line 819
+	mov.u32 	%r201, 5;
+	setp.gt.s32 	%p110, %r200, %r201;
+	@%p110 bra 	$Lt_2_94466;
+ //<loop> Part of loop body line 819, head labeled $Lt_2_41986
+	ld.param.u32 	%r202, [__cudaparm__Z18run_check_neighborPfS_PiS0_S_S_S_S_S0_S0_S0_iiiii_d_vertMemOutside];
+	mul.lo.u32 	%r203, %r9, %r32;
+	add.u32 	%r204, %r16, %r203;
+	mul.lo.u32 	%r205, %r204, 6;
+	add.u32 	%r206, %r200, %r205;
+	mul.lo.u32 	%r207, %r206, 4;
+	add.u32 	%r208, %r202, %r207;
+	ld.global.s32 	%r193, [%r208+0];
+	mov.u32 	%r209, -1;
+	setp.le.s32 	%p111, %r193, %r209;
+	@%p111 bra 	$Lt_2_94466;
+ //<loop> Part of loop body line 819, head labeled $Lt_2_41986
+	.loc	15	822	0
+	ld.param.u32 	%r210, [__cudaparm__Z18run_check_neighborPfS_PiS0_S_S_S_S_S0_S0_S0_iiiii_d_triMemOut];
+	mul.lo.u32 	%r211, %r193, 4;
+	add.u32 	%r212, %r210, %r211;
+	st.global.f32 	[%r212+0], %f209;
+	.loc	15	819	0
+	add.s32 	%r200, %r200, 1;
+	bra.uni 	$Lt_2_41986;
+$Lt_2_94210:
+	mov.u32 	%r213, 63;
+	setp.gt.u32 	%p112, %r16, %r213;
+	@%p112 bra 	$Lt_2_94466;
+	.loc	15	828	0
+	mov.s32 	%r214, 1;
+	ld.param.u32 	%r215, [__cudaparm__Z18run_check_neighborPfS_PiS0_S_S_S_S_S0_S0_S0_iiiii_d_con];
+	mul.lo.u32 	%r216, %r9, 64;
+	add.u32 	%r217, %r16, %r216;
+	mul.lo.u32 	%r218, %r217, 4;
+	add.u32 	%r219, %r215, %r218;
+	st.global.s32 	[%r219+0], %r214;
+$Lt_2_94466:
+$Lt_2_93954:
+$Lt_2_62210:
+	.loc	15	835	0
+	exit;
+$LDWend__Z18run_check_neighborPfS_PiS0_S_S_S_S_S0_S0_S0_iiiii:
+	} // _Z18run_check_neighborPfS_PiS0_S_S_S_S_S0_S0_S0_iiiii
+
