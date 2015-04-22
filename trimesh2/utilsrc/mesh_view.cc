@@ -14,7 +14,6 @@
 #include "ICP.h"
 #include <GL/glut.h>
 #include <string>
-#include "../../meshFIM_CUDA/meshFIM.h"
 using std::string;
 
 
@@ -589,10 +588,6 @@ int main(int argc, char *argv[])
   visible.push_back(true);
   //}
 
-
-
-  meshFIM* FIMPtr = new meshFIM;
-  FIMPtr->SetMesh(themesh);
 
   glutCreateWindow("mesh view");
   glutDisplayFunc(redraw);
