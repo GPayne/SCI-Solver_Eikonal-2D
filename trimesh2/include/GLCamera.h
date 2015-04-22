@@ -12,7 +12,6 @@ Manages OpenGL camera and trackball/arcball interaction
 #include "XForm.h"
 #include "timestamp.h"
 
-
 namespace Mouse {
 	enum button { NONE, ROTATE, MOVEXY, MOVEZ, WHEELUP, WHEELDOWN, LIGHT };
 };

@@ -19,6 +19,9 @@ Can write: PLY (triangle mesh and range grid), OFF, OBJ, RAY, SM, C++
 #  define strncasecmp strnicmp
 # endif
 //#endif
+#ifndef WIN32
+#define strnicmp strncmp
+#endif
 
 #define GET_LINE() if (!fgets(buf, 1024, f)) return false
 #define COND_READ(cond, where, len) if ((cond) && !fread((void *)&(where), (len), 1, f)) return false
@@ -1767,9 +1770,9 @@ static void write_verts_bin(TriMesh *mesh, FILE *f, bool need_swap,
 				fwrite(&(mesh->colors[i][0]), 12, 1, f);
 			if (!mesh->colors.empty() && write_color && !float_color) {
 				char c[3] = {
-					color2uchar(mesh->colors[i][0]),
-					color2uchar(mesh->colors[i][1]),
-					color2uchar(mesh->colors[i][2]) };
+					(char)color2uchar(mesh->colors[i][0]),
+					(char)color2uchar(mesh->colors[i][1]),
+					(char)color2uchar(mesh->colors[i][2]) };
 				fwrite(&c, 3, 1, f);
 			}
 			if (!mesh->confidences.empty() && write_conf)
