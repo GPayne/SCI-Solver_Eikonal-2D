@@ -1,1 +1,0 @@
- --import %laneid,%ctaid,%nctaid,%smid,A7,%pm3,%pm2,s_run_check_neghbor_array,%pm1,__CC-temp__0__,%pm0,s_array,%tid,%clock,%warpid,%ntid,%gridid --export _Z13run_reductionPiS_S_iS_,_Z7FIMCudaPfS_PiS0_S0_S0_S0_iiif,_Z18run_check_neighborPfS_PiS0_S0_S0_S0_iiiii
