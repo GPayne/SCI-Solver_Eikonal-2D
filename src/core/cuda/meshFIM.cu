@@ -85,7 +85,7 @@ void meshFIM::GraphPartition_METIS(char* partfilename, int numBlock)  //read a m
   FILE* partFile = fopen(partfilename, "r+");
   if(partFile == NULL)
   {
-    printf("NO part file found!!!!\n");
+    printf("NO part file found: %s\n", partfilename);
     exit(1);
   }
 
@@ -189,6 +189,7 @@ void meshFIM::GraphPartition_METIS2(int& numBlock, int maxNumBlockVerts)   //cre
       {
         m_BlockSizes[i] = 0;
       }
+      //TODO what is partnmesh.exe? why don't we have the code?
 
       sprintf(cmd, "partnmesh.exe tmp.mesh %d", numBlock);
       //printf("running partition command: %s\n", cmd);
@@ -203,7 +204,7 @@ void meshFIM::GraphPartition_METIS2(int& numBlock, int maxNumBlockVerts)   //cre
       FILE* partFile = fopen(outputFileName, "r+");
       if(partFile == NULL)
       {
-        printf("NO part file found!!!!\n");
+        printf("NO part file found: %s\n",outputFileName);
         exit(1);
       }
 
@@ -260,7 +261,7 @@ void meshFIM::GraphPartition_METIS2(int& numBlock, int maxNumBlockVerts)   //cre
     FILE* partFile = fopen(outputFileName, "r+");
     if(partFile == NULL)
     {
-      printf("NO part file found!!!!\n");
+      printf("NO part file found: %s\n",outputFileName);
       exit(1);
     }
 

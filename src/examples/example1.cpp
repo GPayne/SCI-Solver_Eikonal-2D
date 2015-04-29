@@ -22,7 +22,7 @@ int main(int argc, char* argv[]) {
   }
   clock_t starttime, endtime;
   if (filename.empty())
-    filename = "dragon.tx_maxSF0.5_removeIsolated.ply";
+    filename = "../example_data/SquareMesh_size16.ply";
   TriMesh *themesh = TriMesh::read(filename.c_str());
 
   //themesh->need_normals();
