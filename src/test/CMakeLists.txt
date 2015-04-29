@@ -1,11 +1,12 @@
 # gtest external download
+include(ExternalProject)
+set(EXTERNAL_DIR "${CMAKE_BINARY_DIR}/externals")
 set(GTEST_INSTALL_DIR "${EXTERNAL_DIR}/gtest")
 if (WIN32)
    set(GTEST_SHARED_ARG ON)
 else()
    set(GTEST_SHARED_ARG OFF)
 endif()
-include(ExternalProject)
 ExternalProject_Add( gtest
   PREFIX "${GTEST_INSTALL_DIR}"
   SVN_REPOSITORY "http://googletest.googlecode.com/svn/trunk/"

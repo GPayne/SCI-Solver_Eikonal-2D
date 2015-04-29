@@ -11,21 +11,21 @@ Supports the following operations:
 	vec v1;			// Initialized to (0,0,0)
 	vec v2(1,2,3);		// Initializes the 3 components
 	vec v3(v2);		// Copy constructor
-	double farray[3];
+	float farray[3];
 	vec v4 = vec(farray);	// Explicit: "v4 = farray" won't work
-	Vec<3,double> vd;	// The "vec" used above is Vec<3,double>
+	Vec<3,double> vd;	// The "vec" used above is Vec<3,float>
 	point p1, p2, p3;	// Same as vec
 
 	v3 = v1 + v2;		// Also -, *, /  (all componentwise)
 	v3 = 3.5f * v1;		// Also vec * scalar, vec / scalar
 				// NOTE: scalar has to be the same type:
-				// it won't work to do double * vec<double>
+				// it won't work to do double * vec<float>
 
 	v3 = v1 DOT v2;		// Actually operator^
 	v3 = v1 CROSS v2;	// Actually operator%
 
-	double f = v1[0];	// Subscript
-	double *fp = v1;		// Implicit conversion to double *
+	float f = v1[0];	// Subscript
+	float *fp = v1;		// Implicit conversion to float *
 
 	f = len(v1);		// Length (also len2 == squared length)
 	f = dist(p1, p2);	// Distance (also dist2 == squared distance)
@@ -74,7 +74,7 @@ template <> struct VEC_STATIC_ASSERTION_FAILURE<true>
 #define VEC_STATIC_CHECK(expr) VEC_STATIC_ASSERTION_FAILURE<bool(expr)>()
 
 
-template <int D, class T = double>
+template <int D, class T = float>
 class Vec {
 private:
 	T v[D];
@@ -161,11 +161,11 @@ public:
 		  return true; }
 };
 
-typedef Vec<3,double> vec;
-typedef Vec<3,double> point;
-typedef Vec<2,double> vec2;
-typedef Vec<3,double> vec3;
-typedef Vec<4,double> vec4;
+typedef Vec<3,float> vec;
+typedef Vec<3,float> point;
+typedef Vec<2,float> vec2;
+typedef Vec<3,float> vec3;
+typedef Vec<4,float> vec4;
 typedef Vec<2,int> ivec2;
 typedef Vec<3,int> ivec3;
 typedef Vec<4,int> ivec4;

@@ -1,4 +1,5 @@
-
+#ifndef __CUDA_DEFINES_H__
+#define __CUDA_DEFINES_H__
 #define WARPSIZE 32
 #define DIMENSION      3
 
@@ -25,3 +26,4 @@
 
 typedef unsigned int uint;
 typedef unsigned char uchar;
+#endif

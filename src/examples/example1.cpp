@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "TriMesh.h"
-#include <string>
+#include <cstring>
 #include "meshFIM.h"
 #include <time.h>
 

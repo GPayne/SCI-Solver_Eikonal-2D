@@ -15,21 +15,15 @@
 #include <queue>
 #include <list>
 #include <set>
-//#include "gmain.h"
-
-
 
 #ifndef _EPS
 #define _EPS 1e-06
 #endif
 
-
-
-
-
 using namespace std;
 
-enum LabelType { FarPoint = 0,ActivePoint, MaskPoint, SeedPoint, StopPoint, AlivePoint,ToBeAlivePoint };
+enum LabelType { FarPoint = 0,ActivePoint, MaskPoint, SeedPoint,
+  StopPoint, AlivePoint,ToBeAlivePoint };
 
 
 class meshFIM {
